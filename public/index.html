@@ -470,6 +470,73 @@
             margin-bottom: 10px;
         }
 
+        /* Bearbeitungsmodal Stile */
+        .edit-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .edit-form input, .edit-form textarea, .edit-form select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .edit-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        .btn-save {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .btn-edit {
+            background: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .btn-delete {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
         @media (max-width: 768px) {
             .search-filter-container {
                 grid-template-columns: 1fr;
@@ -484,6 +551,10 @@
             
             h1 {
                 font-size: 2em;
+            }
+
+            .button-group {
+                flex-direction: column;
             }
         }
     </style>
@@ -617,6 +688,45 @@
             <div id="modalContent">
                 <!-- Details werden hier eingefügt -->
             </div>
+        </div>
+    </div>
+
+    <!-- Modal für Mineral bearbeiten -->
+    <div id="editModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeEditModal()">&times;</span>
+            <h2>Mineral bearbeiten</h2>
+            <form class="edit-form" id="editForm" onsubmit="saveEditedMineral(event)">
+                <input type="hidden" id="editMineralId">
+                <input type="text" id="editMineralName" placeholder="Name des Minerals" required>
+                <input type="text" id="editMineralNumber" placeholder="Nummer des Steins" required>
+                <input type="text" id="editMineralColor" placeholder="Farbe" required>
+                <textarea id="editMineralDescription" placeholder="Beschreibung" required></textarea>
+                <input type="text" id="editMineralLocation" placeholder="Fundort" required>
+                <input type="text" id="editMineralPurchaseLocation" placeholder="Kaufort" required>
+                <select id="editMineralRockType" required>
+                    <option value="">Gesteinsart auswählen</option>
+                    <option value="magmatisch">Magmatisch</option>
+                    <option value="sedimentär">Sedimentär</option>
+                    <option value="metamorph">Metamorph</option>
+                </select>
+                <input type="text" id="editMineralShelf" placeholder="Regal-Nummer" required>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="editMineralImage" accept="image/*" onchange="previewEditImage(event)">
+                    <div class="file-input-display">
+                        <div id="editImagePreview">
+                            📸 Neues Bild hochladen (optional)<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn-save" id="saveBtn">Änderungen speichern</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditModal()">Abbrechen</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -934,11 +1044,6 @@
             `).join('');
         }
 
-        // Legacy-Funktion für Rückwärtskompatibilität (wird nicht mehr verwendet)
-        function filterMinerals() {
-            applyFiltersAndSort();
-        }
-
         // Mineral-Details anzeigen
         async function showMineralDetails(id) {
             try {
@@ -999,8 +1104,8 @@
                     </div>
                     
                     <div style="margin-top: 20px; text-align: center;">
-                        <button onclick="editMineral(${mineral.id})" style="background: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Bearbeiten</button>
-                        <button onclick="deleteMineral(${mineral.id})" style="background: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Löschen</button>
+                        <button onclick="openEditModal(${mineral.id})" class="btn-edit">Bearbeiten</button>
+                        <button onclick="deleteMineral(${mineral.id})" class="btn-delete">Löschen</button>
                     </div>
                 `;
 
@@ -1011,12 +1116,142 @@
             }
         }
 
+        // Bearbeitungsmodal öffnen
+        async function openEditModal(id) {
+            try {
+                const response = await fetch(`${API_BASE}/minerals/${id}`);
+                if (!response.ok) {
+                    throw new Error(`Mineral nicht gefunden`);
+                }
+                
+                const mineral = await response.json();
+                
+                // Formular mit aktuellen Daten füllen
+                document.getElementById('editMineralId').value = mineral.id;
+                document.getElementById('editMineralName').value = mineral.name;
+                document.getElementById('editMineralNumber').value = mineral.number;
+                document.getElementById('editMineralColor').value = mineral.color || '';
+                document.getElementById('editMineralDescription').value = mineral.description || '';
+                document.getElementById('editMineralLocation').value = mineral.location || '';
+                document.getElementById('editMineralPurchaseLocation').value = mineral.purchase_location || '';
+                document.getElementById('editMineralRockType').value = mineral.rock_type || '';
+                document.getElementById('editMineralShelf').value = mineral.shelf || '';
+                
+                // Aktuelles Bild anzeigen
+                const editImagePreview = document.getElementById('editImagePreview');
+                if (mineral.image_path) {
+                    const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+                    editImagePreview.innerHTML = `
+                        <img src="${imageBase}/${mineral.image_path}" class="preview-image" alt="Aktuelles Bild">
+                        <br><small>Aktuelles Bild • Neues Bild hochladen um zu ersetzen</small>
+                    `;
+                } else {
+                    editImagePreview.innerHTML = `
+                        📸 Neues Bild hochladen (optional)<br>
+                        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                    `;
+                }
+                
+                // Detailmodal schließen und Bearbeitungsmodal öffnen
+                closeModal();
+                document.getElementById('editModal').style.display = 'flex';
+                
+            } catch (error) {
+                console.error('Fehler beim Öffnen des Bearbeitungsmodals:', error);
+                showError('Mineral konnte nicht zum Bearbeiten geladen werden.');
+            }
+        }
+
+        // Bearbeitetes Mineral speichern
+        async function saveEditedMineral(event) {
+            event.preventDefault();
+            
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.disabled = true;
+            saveBtn.textContent = 'Speichere...';
+            
+            try {
+                const id = document.getElementById('editMineralId').value;
+                const formData = new FormData();
+                
+                formData.append('name', document.getElementById('editMineralName').value);
+                formData.append('number', document.getElementById('editMineralNumber').value);
+                formData.append('color', document.getElementById('editMineralColor').value);
+                formData.append('description', document.getElementById('editMineralDescription').value);
+                formData.append('location', document.getElementById('editMineralLocation').value);
+                formData.append('purchase_location', document.getElementById('editMineralPurchaseLocation').value);
+                formData.append('rock_type', document.getElementById('editMineralRockType').value);
+                formData.append('shelf', document.getElementById('editMineralShelf').value);
+                
+                // Neues Bild hinzufügen falls hochgeladen
+                const imageFile = document.getElementById('editMineralImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+                
+                const response = await fetch(`${API_BASE}/minerals/${id}`, {
+                    method: 'PUT',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('Mineral erfolgreich aktualisiert!');
+                    closeEditModal();
+                    
+                    // Listen aktualisieren
+                    await loadFilterOptions();
+                    await loadStats();
+                    await loadMinerals();
+                } else {
+                    showError(`Fehler beim Aktualisieren: ${result.error}`);
+                }
+                
+            } catch (error) {
+                console.error('Fehler beim Speichern der Änderungen:', error);
+                showError('Netzwerkfehler beim Speichern der Änderungen.');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.textContent = 'Änderungen speichern';
+            }
+        }
+
+        // Bearbeitungsmodal schließen
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            
+            // Formular zurücksetzen
+            document.getElementById('editForm').reset();
+            document.getElementById('editImagePreview').innerHTML = `
+                📸 Neues Bild hochladen (optional)<br>
+                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            `;
+        }
+
+        // Vorschau für Bearbeitungsbild
+        function previewEditImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('editImagePreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" class="preview-image" alt="Neue Vorschau">
+                        <br><small>Neues Bild: ${file.name}</small>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
         // Modal schließen
         function closeModal() {
             document.getElementById('mineralModal').style.display = 'none';
         }
 
-        // Bild-Vorschau
+        // Bild-Vorschau (für neues Mineral)
         function previewImage(event) {
             const file = event.target.files[0];
             const preview = document.getElementById('imagePreview');
@@ -1098,12 +1333,6 @@
             }
         }
 
-        // Mineral bearbeiten (vereinfacht)
-        function editMineral(id) {
-            alert('Bearbeitungsfunktion wird in einer zukünftigen Version implementiert.');
-            closeModal();
-        }
-
         // Mineral löschen
         async function deleteMineral(id) {
             if (!confirm('Möchten Sie dieses Mineral wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
@@ -1136,9 +1365,14 @@
 
         // Modal schließen bei Klick außerhalb
         window.onclick = function(event) {
-            const modal = document.getElementById('mineralModal');
-            if (event.target === modal) {
+            const mineralModal = document.getElementById('mineralModal');
+            const editModal = document.getElementById('editModal');
+            
+            if (event.target === mineralModal) {
                 closeModal();
+            }
+            if (event.target === editModal) {
+                closeEditModal();
             }
         }
 
@@ -1146,19 +1380,9 @@
         document.addEventListener('keydown', function(event) {
             if (event.key === 'Escape') {
                 closeModal();
+                closeEditModal();
             }
         });
-
-        // Service Worker für Offline-Funktionalität (optional)
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('/sw.js').then(function(registration) {
-                    console.log('ServiceWorker registriert:', registration.scope);
-                }, function(err) {
-                    console.log('ServiceWorker Registrierung fehlgeschlagen:', err);
-                });
-            });
-        }
     </script>
 </body>
 </html>
