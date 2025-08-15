@@ -72,7 +72,7 @@ function insertSampleData() {
         }
         
         if (row.count === 0) {
-            console.log('🔍 Füge Beispieldaten ein...');
+            console.log('📝 Füge Beispieldaten ein...');
             const sampleMinerals = [
                 ['Amethyst', 'MIN-001', 'violett', 'Ein wunderschöner violetter Quarz-Kristall mit ausgezeichneter Klarheit und Farbsättigung.', 'brasilien', 'Mineralienbörse München', 'magmatisch', 'R1-A3'],
                 ['Pyrit', 'MIN-002', 'gelb', 'Auch als "Katzengold" bekannt, zeigt dieser Pyrit perfekte Würfelkristalle.', 'deutschland', 'Online-Shop', 'sedimentär', 'R2-B1'],
@@ -151,6 +151,52 @@ async function processImage(imagePath) {
 }
 
 // API ROUTES
+
+// WICHTIG: Filter-Route muss VOR der allgemeinen Mineralien-Route stehen!
+// Eindeutige Werte für Filter abrufen
+app.get('/api/minerals/filters', (req, res) => {
+    console.log('🔍 Filter-Route aufgerufen');
+    
+    const queries = {
+        colors: 'SELECT DISTINCT color FROM minerals WHERE color IS NOT NULL AND color != "" ORDER BY color',
+        locations: 'SELECT DISTINCT location FROM minerals WHERE location IS NOT NULL AND location != "" ORDER BY location',
+        purchase_locations: 'SELECT DISTINCT purchase_location FROM minerals WHERE purchase_location IS NOT NULL AND purchase_location != "" ORDER BY purchase_location',
+        rock_types: 'SELECT DISTINCT rock_type FROM minerals WHERE rock_type IS NOT NULL AND rock_type != "" ORDER BY rock_type',
+        shelves: 'SELECT DISTINCT shelf FROM minerals WHERE shelf IS NOT NULL AND shelf != "" ORDER BY shelf'
+    };
+
+    const results = {};
+    let completed = 0;
+    const totalQueries = Object.keys(queries).length;
+
+    if (totalQueries === 0) {
+        return res.json({
+            colors: [],
+            locations: [],
+            purchase_locations: [],
+            rock_types: [],
+            shelves: []
+        });
+    }
+
+    Object.keys(queries).forEach(key => {
+        db.all(queries[key], [], (err, rows) => {
+            if (err) {
+                console.error(`Fehler beim Abrufen von ${key}:`, err);
+                results[key] = [];
+            } else {
+                results[key] = rows.map(row => Object.values(row)[0]).filter(value => value && value.trim() !== '');
+                console.log(`✅ ${key}: ${results[key].length} Einträge gefunden`);
+            }
+            
+            completed++;
+            if (completed === totalQueries) {
+                console.log('📊 Filter-Daten vollständig geladen:', results);
+                res.json(results);
+            }
+        });
+    });
+});
 
 // Alle Mineralien abrufen UND Suche/Filter (kombinierte Route)
 app.get('/api/minerals', (req, res) => {
@@ -392,36 +438,6 @@ app.delete('/api/minerals/:id', (req, res) => {
             } else {
                 console.log(`🗑️ Mineral gelöscht: ${mineral.name} (ID: ${id})`);
                 res.json({ message: 'Mineral erfolgreich gelöscht' });
-            }
-        });
-    });
-});
-
-// Eindeutige Werte für Filter abrufen
-app.get('/api/minerals/filters', (req, res) => {
-    const queries = {
-        colors: 'SELECT DISTINCT color FROM minerals WHERE color IS NOT NULL ORDER BY color',
-        locations: 'SELECT DISTINCT location FROM minerals WHERE location IS NOT NULL ORDER BY location',
-        purchase_locations: 'SELECT DISTINCT purchase_location FROM minerals WHERE purchase_location IS NOT NULL ORDER BY purchase_location',
-        rock_types: 'SELECT DISTINCT rock_type FROM minerals WHERE rock_type IS NOT NULL ORDER BY rock_type',
-        shelves: 'SELECT DISTINCT shelf FROM minerals WHERE shelf IS NOT NULL ORDER BY shelf'
-    };
-
-    const results = {};
-    let completed = 0;
-
-    Object.keys(queries).forEach(key => {
-        db.all(queries[key], [], (err, rows) => {
-            if (err) {
-                console.error(`Fehler beim Abrufen von ${key}:`, err);
-                results[key] = [];
-            } else {
-                results[key] = rows.map(row => Object.values(row)[0]);
-            }
-            
-            completed++;
-            if (completed === Object.keys(queries).length) {
-                res.json(results);
             }
         });
     });
