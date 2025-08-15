@@ -8,7 +8,7 @@ const sharp = require('sharp');
 const cors = require('cors');
 
 const app = express();
-const PORT = 3000;
+const PORT = 8084;
 
 // Middleware
 app.use(cors());
