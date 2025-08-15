@@ -72,7 +72,7 @@ function insertSampleData() {
         }
         
         if (row.count === 0) {
-            console.log('📝 Füge Beispieldaten ein...');
+            console.log('🔍 Füge Beispieldaten ein...');
             const sampleMinerals = [
                 ['Amethyst', 'MIN-001', 'violett', 'Ein wunderschöner violetter Quarz-Kristall mit ausgezeichneter Klarheit und Farbsättigung.', 'brasilien', 'Mineralienbörse München', 'magmatisch', 'R1-A3'],
                 ['Pyrit', 'MIN-002', 'gelb', 'Auch als "Katzengold" bekannt, zeigt dieser Pyrit perfekte Würfelkristalle.', 'deutschland', 'Online-Shop', 'sedimentär', 'R2-B1'],
@@ -152,15 +152,72 @@ async function processImage(imagePath) {
 
 // API ROUTES
 
-// Alle Mineralien abrufen
+// Alle Mineralien abrufen UND Suche/Filter (kombinierte Route)
 app.get('/api/minerals', (req, res) => {
-    const query = `SELECT * FROM minerals ORDER BY name ASC`;
+    const { 
+        name, 
+        number, 
+        color, 
+        location, 
+        purchase_location, 
+        rock_type, 
+        shelf,
+        sortBy = 'name',
+        sortOrder = 'ASC'
+    } = req.query;
+
+    let query = 'SELECT * FROM minerals WHERE 1=1';
+    const params = [];
+
+    // Filter hinzufügen
+    if (name) {
+        query += ' AND name LIKE ?';
+        params.push(`%${name}%`);
+    }
+    if (number) {
+        query += ' AND number LIKE ?';
+        params.push(`%${number}%`);
+    }
+    if (color) {
+        query += ' AND color = ?';
+        params.push(color);
+    }
+    if (location) {
+        query += ' AND location = ?';
+        params.push(location);
+    }
+    if (purchase_location) {
+        query += ' AND purchase_location = ?';
+        params.push(purchase_location);
+    }
+    if (rock_type) {
+        query += ' AND rock_type = ?';
+        params.push(rock_type);
+    }
+    if (shelf) {
+        query += ' AND shelf = ?';
+        params.push(shelf);
+    }
+
+    // Sortierung hinzufügen
+    const validSortColumns = ['name', 'number', 'color', 'created_at'];
+    const validSortOrder = ['ASC', 'DESC'];
     
-    db.all(query, [], (err, rows) => {
+    if (validSortColumns.includes(sortBy) && validSortOrder.includes(sortOrder.toUpperCase())) {
+        query += ` ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
+    } else {
+        query += ' ORDER BY name ASC';
+    }
+
+    console.log('Ausgeführte Abfrage:', query);
+    console.log('Parameter:', params);
+
+    db.all(query, params, (err, rows) => {
         if (err) {
             console.error('Datenbankfehler:', err);
             res.status(500).json({ error: 'Datenbankfehler' });
         } else {
+            console.log(`✅ ${rows.length} Mineralien gefunden`);
             res.json(rows);
         }
     });
@@ -340,73 +397,6 @@ app.delete('/api/minerals/:id', (req, res) => {
     });
 });
 
-// Suche und Filter
-app.get('/api/minerals/search', (req, res) => {
-    const { 
-        name, 
-        number, 
-        color, 
-        location, 
-        purchase_location, 
-        rock_type, 
-        shelf,
-        sortBy = 'name',
-        sortOrder = 'ASC'
-    } = req.query;
-
-    let query = 'SELECT * FROM minerals WHERE 1=1';
-    const params = [];
-
-    // Filter hinzufügen
-    if (name) {
-        query += ' AND name LIKE ?';
-        params.push(`%${name}%`);
-    }
-    if (number) {
-        query += ' AND number LIKE ?';
-        params.push(`%${number}%`);
-    }
-    if (color) {
-        query += ' AND color = ?';
-        params.push(color);
-    }
-    if (location) {
-        query += ' AND location = ?';
-        params.push(location);
-    }
-    if (purchase_location) {
-        query += ' AND purchase_location = ?';
-        params.push(purchase_location);
-    }
-    if (rock_type) {
-        query += ' AND rock_type = ?';
-        params.push(rock_type);
-    }
-    if (shelf) {
-        query += ' AND shelf = ?';
-        params.push(shelf);
-    }
-
-    // Sortierung hinzufügen
-    const validSortColumns = ['name', 'number', 'color', 'created_at'];
-    const validSortOrder = ['ASC', 'DESC'];
-    
-    if (validSortColumns.includes(sortBy) && validSortOrder.includes(sortOrder.toUpperCase())) {
-        query += ` ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
-    } else {
-        query += ' ORDER BY name ASC';
-    }
-
-    db.all(query, params, (err, rows) => {
-        if (err) {
-            console.error('Datenbankfehler:', err);
-            res.status(500).json({ error: 'Datenbankfehler' });
-        } else {
-            res.json(rows);
-        }
-    });
-});
-
 // Eindeutige Werte für Filter abrufen
 app.get('/api/minerals/filters', (req, res) => {
     const queries = {
@@ -494,7 +484,7 @@ app.listen(PORT, '0.0.0.0', () => {
 🌐 Netzwerk-Zugriff: http://[Pi-IP]:${PORT}
 📁 Bilder-Ordner: ${uploadsDir}
 💾 Datenbank: ./minerals.db
-🕒 Gestartet: ${new Date().toLocaleString('de-DE')}
+🕐 Gestartet: ${new Date().toLocaleString('de-DE')}
 🌟 ================================
     `);
 });

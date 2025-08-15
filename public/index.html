@@ -708,7 +708,7 @@
             
             try {
                 const sortBy = document.getElementById('sortBy').value;
-                const response = await fetch(`${API_BASE}/minerals/search?sortBy=${sortBy}`);
+                const response = await fetch(`${API_BASE}/minerals?sortBy=${sortBy}`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
