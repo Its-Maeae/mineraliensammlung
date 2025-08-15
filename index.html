@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine Mineraliensammlung</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            margin-bottom: 30px;
+            padding: 30px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            color: #7f8c8d;
+            margin-bottom: 20px;
+        }
+
+        nav {
+            margin-top: 20px;
+        }
+
+        nav button {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 0 10px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        nav button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        nav button.active {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+        }
+
+        .page {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .welcome-content {
+            text-align: center;
+            padding: 40px 0;
+        }
+
+        .welcome-content h2 {
+            font-size: 2.2em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        .welcome-content p {
+            font-size: 1.1em;
+            color: #555;
+            line-height: 1.8;
+            max-width: 800px;
+            margin: 0 auto 30px;
+        }
+
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+
+        .feature {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+
+        .feature h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .search-filter-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .search-section, .filter-section {
+            background: rgba(240, 240, 240, 0.5);
+            padding: 20px;
+            border-radius: 15px;
+        }
+
+        .search-section h3, .filter-section h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+        }
+
+        .search-input, .filter-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        .search-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+        }
+
+        .sort-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .sort-section select {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 18px;
+        }
+
+        .minerals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .mineral-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .mineral-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .mineral-image {
+            width: 100%;
+            height: 200px;
+            background: linear-gradient(45deg, #ff9a9e, #fecfef);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            color: white;
+            position: relative;
+        }
+
+        .mineral-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .mineral-image .placeholder {
+            font-size: 60px;
+        }
+
+        .mineral-info {
+            padding: 20px;
+        }
+
+        .mineral-info h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.3em;
+        }
+
+        .mineral-info p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .admin-form {
+            display: grid;
+            gap: 20px;
+        }
+
+        .admin-form input, .admin-form textarea, .admin-form select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .admin-form textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .admin-form button {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .admin-form button:hover {
+            transform: translateY(-2px);
+        }
+
+        .admin-form button:disabled {
+            background: #ccc;
+            transform: none;
+            cursor: not-allowed;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+
+        .file-input-display {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 40px 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .file-input-wrapper:hover .file-input-display {
+            border-color: #4ecdc4;
+            background: #f0fffe;
+        }
+
+        .preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 10px;
+            margin: 10px auto;
+            display: block;
+        }
+
+        .detail-info {
+            display: grid;
+            gap: 15px;
+        }
+
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .detail-value {
+            color: #555;
+        }
+
+        .detail-image {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .detail-image img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .success-message {
+            background: #4ecdc4;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .search-filter-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            nav button {
+                display: block;
+                margin: 5px 0;
+                width: 100%;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏔️ Meine Mineraliensammlung</h1>
+            <p class="subtitle">Entdecken Sie die Schönheit der Natur in meiner persönlichen Sammlung</p>
+            <nav>
+                <button onclick="showPage('home')" class="nav-btn active" id="home-btn">Startseite</button>
+                <button onclick="showPage('collection')" class="nav-btn" id="collection-btn">Sammlung</button>
+                <button onclick="showPage('admin')" class="nav-btn" id="admin-btn">Admin-Panel</button>
+            </nav>
+        </header>
+
+        <div id="errorContainer"></div>
+
+        <div id="home" class="page active">
+            <div class="welcome-content">
+                <h2>Willkommen in meiner Mineralwelt</h2>
+                <p>Tauchen Sie ein in die faszinierende Welt der Mineralien und Gesteine. Diese Sammlung zeigt die Vielfalt und Schönheit der Erdgeschichte, von glänzenden Kristallen bis hin zu seltenen geologischen Formationen. Jedes Exemplar erzählt seine eigene Geschichte über die Entstehung und Entwicklung unseres Planeten.</p>
+                <p>Nutzen Sie die Such- und Filterfunktionen, um gezielt nach bestimmten Mineralien zu suchen, oder lassen Sie sich von der Vielfalt der Sammlung inspirieren.</p>
+            </div>
+            
+            <div id="statsContainer" class="stats-grid">
+                <!-- Statistiken werden hier eingefügt -->
+            </div>
+            
+            <div class="features">
+                <div class="feature">
+                    <h3>🔍 Erweiterte Suche</h3>
+                    <p>Suchen Sie nach Namen oder Steinnummer und finden Sie schnell das gewünschte Mineral.</p>
+                </div>
+                <div class="feature">
+                    <h3>🎨 Intelligente Filter</h3>
+                    <p>Filtern Sie nach Farbe, Fundort, Kaufort, Gesteinsart oder Regalposition.</p>
+                </div>
+                <div class="feature">
+                    <h3>📋 Detaillierte Informationen</h3>
+                    <p>Erhalten Sie umfassende Informationen zu jedem Mineral in der Sammlung.</p>
+                </div>
+                <div class="feature">
+                    <h3>⚡ Raspberry Pi Integration</h3>
+                    <p>Optimiert für den Betrieb auf Ihrem Raspberry Pi mit lokaler Datenbank.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="collection" class="page">
+            <div class="search-filter-container">
+                <div class="search-section">
+                    <h3>🔍 Suche</h3>
+                    <input type="text" id="searchName" class="search-input" placeholder="Nach Name suchen..." onkeyup="filterMinerals()">
+                    <input type="text" id="searchNumber" class="search-input" placeholder="Nach Steinnummer suchen..." onkeyup="filterMinerals()">
+                </div>
+                
+                <div class="filter-section">
+                    <h3>🎯 Filter</h3>
+                    <select id="colorFilter" class="filter-select" onchange="filterMinerals()">
+                        <option value="">Alle Farben</option>
+                    </select>
+                    <select id="locationFilter" class="filter-select" onchange="filterMinerals()">
+                        <option value="">Alle Fundorte</option>
+                    </select>
+                    <select id="rockTypeFilter" class="filter-select" onchange="filterMinerals()">
+                        <option value="">Alle Gesteinsarten</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="sort-section">
+                <label for="sortBy">Sortieren nach: </label>
+                <select id="sortBy" onchange="loadMinerals()">
+                    <option value="name">Alphabet (Name)</option>
+                    <option value="number">Steinnummer</option>
+                    <option value="color">Farbe</option>
+                </select>
+            </div>
+
+            <div id="mineralsGrid" class="minerals-grid">
+                <div class="loading">Lade Mineralien...</div>
+            </div>
+        </div>
+
+        <div id="admin" class="page">
+            <h2>Admin-Panel</h2>
+            <p>Hier können Sie neue Mineralien zu Ihrer Sammlung hinzufügen:</p>
+            
+            <form class="admin-form" onsubmit="addMineral(event)">
+                <input type="text" id="mineralName" placeholder="Name des Minerals" required>
+                <input type="text" id="mineralNumber" placeholder="Nummer des Steins" required>
+                <input type="text" id="mineralColor" placeholder="Farbe" required>
+                <textarea id="mineralDescription" placeholder="Beschreibung" required></textarea>
+                <input type="text" id="mineralLocation" placeholder="Fundort" required>
+                <input type="text" id="mineralPurchaseLocation" placeholder="Kaufort" required>
+                <select id="mineralRockType" required>
+                    <option value="">Gesteinsart auswählen</option>
+                    <option value="magmatisch">Magmatisch</option>
+                    <option value="sedimentär">Sedimentär</option>
+                    <option value="metamorph">Metamorph</option>
+                </select>
+                <input type="text" id="mineralShelf" placeholder="Regal-Nummer" required>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="mineralImage" accept="image/*" onchange="previewImage(event)">
+                    <div class="file-input-display">
+                        <div id="imagePreview">
+                            📸 Klicken Sie hier um ein Bild hochzuladen<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" id="submitBtn">Mineral hinzufügen</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Mineral-Details -->
+    <div id="mineralModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <div id="modalContent">
+                <!-- Details werden hier eingefügt -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let minerals = [];
+        let filteredMinerals = [];
+        let filters = {};
+
+        // API Base URL
+        const API_BASE = '/api';
+
+        // Initialisierung beim Laden der Seite
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStats();
+            loadFilterOptions();
+        });
+
+        // Fehler anzeigen
+        function showError(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="error-message">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // Erfolg anzeigen
+        function showSuccess(message) {
+            const container = document.getElementById('errorContainer');
+            container.innerHTML = `<div class="success-message">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 3000);
+        }
+
+        // Statistiken laden
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/stats`);
+                const stats = await response.json();
+                
+                const statsContainer = document.getElementById('statsContainer');
+                statsContainer.innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.total.count}</div>
+                        <div>Mineralien gesamt</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.byColor.length}</div>
+                        <div>Verschiedene Farben</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.byRockType.length}</div>
+                        <div>Gesteinsarten</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${stats.byLocation.length}</div>
+                        <div>Fundorte</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Fehler beim Laden der Statistiken:', error);
+            }
+        }
+
+        // Filter-Optionen laden
+        async function loadFilterOptions() {
+            try {
+                const response = await fetch(`${API_BASE}/minerals/filters`);
+                const filterData = await response.json();
+                
+                // Farben-Filter füllen
+                const colorSelect = document.getElementById('colorFilter');
+                colorSelect.innerHTML = '<option value="">Alle Farben</option>';
+                filterData.colors.forEach(color => {
+                    colorSelect.innerHTML += `<option value="${color}">${color}</option>`;
+                });
+                
+                // Fundorte-Filter füllen
+                const locationSelect = document.getElementById('locationFilter');
+                locationSelect.innerHTML = '<option value="">Alle Fundorte</option>';
+                filterData.locations.forEach(location => {
+                    locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+                });
+                
+                // Gesteinsarten-Filter füllen
+                const rockTypeSelect = document.getElementById('rockTypeFilter');
+                rockTypeSelect.innerHTML = '<option value="">Alle Gesteinsarten</option>';
+                filterData.rock_types.forEach(type => {
+                    rockTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+                });
+                
+                filters = filterData;
+            } catch (error) {
+                console.error('Fehler beim Laden der Filter:', error);
+            }
+        }
+
+        // Seiten wechseln
+        function showPage(pageId) {
+            // Alle Seiten verstecken
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Alle Nav-Buttons deaktivieren
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Gewählte Seite anzeigen
+            document.getElementById(pageId).classList.add('active');
+            document.getElementById(pageId + '-btn').classList.add('active');
+            
+            if (pageId === 'collection') {
+                loadMinerals();
+            } else if (pageId === 'home') {
+                loadStats();
+            }
+        }
+
+        // Mineralien laden
+        async function loadMinerals() {
+            const grid = document.getElementById('mineralsGrid');
+            grid.innerHTML = '<div class="loading">Lade Mineralien...</div>';
+            
+            try {
+                const sortBy = document.getElementById('sortBy').value;
+                const response = await fetch(`${API_BASE}/minerals/search?sortBy=${sortBy}`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                minerals = await response.json();
+                filteredMinerals = [...minerals];
+                displayMinerals();
+            } catch (error) {
+                console.error('Fehler beim Laden der Mineralien:', error);
+                grid.innerHTML = '<div class="error-message">Fehler beim Laden der Mineralien. Bitte versuchen Sie es später erneut.</div>';
+                showError('Mineralien konnten nicht geladen werden.');
+            }
+        }
+
+        // Mineralien anzeigen
+        function displayMinerals() {
+            const grid = document.getElementById('mineralsGrid');
+            
+            if (filteredMinerals.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1; padding: 40px;">Keine Mineralien gefunden.</p>';
+                return;
+            }
+            
+            grid.innerHTML = filteredMinerals.map(mineral => `
+                <div class="mineral-card" onclick="showMineralDetails(${mineral.id})">
+                    <div class="mineral-image">
+                        ${mineral.image_path 
+                            ? `<img src="/images/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                            : `<div class="placeholder">🔸</div>`
+                        }
+                        ${mineral.image_path ? `<div class="placeholder" style="display:none;">🔸</div>` : ''}
+                    </div>
+                    <div class="mineral-info">
+                        <h3>${mineral.name}</h3>
+                        <p><strong>Nr:</strong> ${mineral.number}</p>
+                        <p><strong>Farbe:</strong> ${mineral.color || 'Nicht angegeben'}</p>
+                        <p><strong>Fundort:</strong> ${mineral.location || 'Unbekannt'}</p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Mineralien filtern
+        function filterMinerals() {
+            const nameSearch = document.getElementById('searchName').value.toLowerCase();
+            const numberSearch = document.getElementById('searchNumber').value.toLowerCase();
+            const colorFilter = document.getElementById('colorFilter').value;
+            const locationFilter = document.getElementById('locationFilter').value;
+            const rockTypeFilter = document.getElementById('rockTypeFilter').value;
+
+            filteredMinerals = minerals.filter(mineral => {
+                return (
+                    (nameSearch === '' || mineral.name.toLowerCase().includes(nameSearch)) &&
+                    (numberSearch === '' || mineral.number.toLowerCase().includes(numberSearch)) &&
+                    (colorFilter === '' || mineral.color === colorFilter) &&
+                    (locationFilter === '' || mineral.location === locationFilter) &&
+                    (rockTypeFilter === '' || mineral.rock_type === rockTypeFilter)
+                );
+            });
+
+            displayMinerals();
+        }
+
+        // Mineral-Details anzeigen
+        async function showMineralDetails(id) {
+            try {
+                const response = await fetch(`${API_BASE}/minerals/${id}`);
+                
+                if (!response.ok) {
+                    throw new Error(`Mineral nicht gefunden`);
+                }
+                
+                const mineral = await response.json();
+                const modalContent = document.getElementById('modalContent');
+                
+                modalContent.innerHTML = `
+                    <h2>${mineral.name}</h2>
+                    
+                    ${mineral.image_path 
+                        ? `<div class="detail-image"><img src="/images/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'"></div>`
+                        : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">🔸</div>'
+                    }
+                    
+                    <div class="detail-info">
+                        <div class="detail-item">
+                            <span class="detail-label">Steinnummer:</span>
+                            <span class="detail-value">${mineral.number}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Farbe:</span>
+                            <span class="detail-value">${mineral.color || 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Fundort:</span>
+                            <span class="detail-value">${mineral.location || 'Unbekannt'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Kaufort:</span>
+                            <span class="detail-value">${mineral.purchase_location || 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Gesteinsart:</span>
+                            <span class="detail-value">${mineral.rock_type || 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Regal:</span>
+                            <span class="detail-value">${mineral.shelf || 'Nicht angegeben'}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Hinzugefügt:</span>
+                            <span class="detail-value">${new Date(mineral.created_at).toLocaleDateString('de-DE')}</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 20px;">
+                        <h3>Beschreibung</h3>
+                        <p style="margin-top: 10px; color: #555; line-height: 1.6;">${mineral.description || 'Keine Beschreibung verfügbar.'}</p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; text-align: center;">
+                        <button onclick="editMineral(${mineral.id})" style="background: #ff9800; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Bearbeiten</button>
+                        <button onclick="deleteMineral(${mineral.id})" style="background: #f44336; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Löschen</button>
+                    </div>
+                `;
+
+                document.getElementById('mineralModal').style.display = 'flex';
+            } catch (error) {
+                console.error('Fehler beim Laden der Mineral-Details:', error);
+                showError('Details konnten nicht geladen werden.');
+            }
+        }
+
+        // Modal schließen
+        function closeModal() {
+            document.getElementById('mineralModal').style.display = 'none';
+        }
+
+        // Bild-Vorschau
+        function previewImage(event) {
+            const file = event.target.files[0];
+            const preview = document.getElementById('imagePreview');
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <img src="${e.target.result}" class="preview-image" alt="Vorschau">
+                        <br><small>${file.name}</small>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                preview.innerHTML = `
+                    📸 Klicken Sie hier um ein Bild hochzuladen<br>
+                    <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                `;
+            }
+        }
+
+        // Neues Mineral hinzufügen
+        async function addMineral(event) {
+            event.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Wird hinzugefügt...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('name', document.getElementById('mineralName').value);
+                formData.append('number', document.getElementById('mineralNumber').value);
+                formData.append('color', document.getElementById('mineralColor').value);
+                formData.append('description', document.getElementById('mineralDescription').value);
+                formData.append('location', document.getElementById('mineralLocation').value);
+                formData.append('purchase_location', document.getElementById('mineralPurchaseLocation').value);
+                formData.append('rock_type', document.getElementById('mineralRockType').value);
+                formData.append('shelf', document.getElementById('mineralShelf').value);
+                
+                // Bild hinzufügen falls vorhanden
+                const imageFile = document.getElementById('mineralImage').files[0];
+                if (imageFile) {
+                    formData.append('image', imageFile);
+                }
+                
+                const response = await fetch(`${API_BASE}/minerals`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('Mineral erfolgreich hinzugefügt!');
+                    event.target.reset();
+                    document.getElementById('imagePreview').innerHTML = `
+                        📸 Klicken Sie hier um ein Bild hochzuladen<br>
+                        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                    `;
+                    
+                    // Filter-Optionen neu laden
+                    await loadFilterOptions();
+                    await loadStats();
+                    
+                    // Zur Sammlung wechseln nach 2 Sekunden
+                    setTimeout(() => {
+                        showPage('collection');
+                    }, 2000);
+                } else {
+                    showError(`Fehler: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Hinzufügen des Minerals:', error);
+                showError('Netzwerkfehler beim Hinzufügen des Minerals.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Mineral hinzufügen';
+            }
+        }
+
+        // Mineral bearbeiten (vereinfacht)
+        function editMineral(id) {
+            alert('Bearbeitungsfunktion wird in einer zukünftigen Version implementiert.');
+            closeModal();
+        }
+
+        // Mineral löschen
+        async function deleteMineral(id) {
+            if (!confirm('Möchten Sie dieses Mineral wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/minerals/${id}`, {
+                    method: 'DELETE'
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showSuccess('Mineral erfolgreich gelöscht!');
+                    closeModal();
+                    
+                    // Listen aktualisieren
+                    await loadFilterOptions();
+                    await loadStats();
+                    await loadMinerals();
+                } else {
+                    showError(`Fehler beim Löschen: ${result.error}`);
+                }
+            } catch (error) {
+                console.error('Fehler beim Löschen des Minerals:', error);
+                showError('Netzwerkfehler beim Löschen des Minerals.');
+            }
+        }
+
+        // Modal schließen bei Klick außerhalb
+        window.onclick = function(event) {
+            const modal = document.getElementById('mineralModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+
+        // Keyboard-Navigation
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Service Worker für Offline-Funktionalität (optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registriert:', registration.scope);
+                }, function(err) {
+                    console.log('ServiceWorker Registrierung fehlgeschlagen:', err);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
