@@ -22,7 +22,7 @@ module.exports = {
     // Umgebungsvariablen
     env: {
       NODE_ENV: 'production',
-      PORT: 3000
+      PORT: 8084
     },
     
     // Development Umgebung

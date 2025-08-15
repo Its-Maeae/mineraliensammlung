@@ -580,8 +580,8 @@
         let filteredMinerals = [];
         let filters = {};
 
-        // API Base URL
-        const API_BASE = '/api';
+        // API Base URL - dynamisch ermittelt
+        const API_BASE = window.location.protocol + '//' + window.location.hostname + ':8084/api';
 
         // Initialisierung beim Laden der Seite
         document.addEventListener('DOMContentLoaded', function() {
@@ -611,6 +611,9 @@
         async function loadStats() {
             try {
                 const response = await fetch(`${API_BASE}/stats`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const stats = await response.json();
                 
                 const statsContainer = document.getElementById('statsContainer');
@@ -634,6 +637,7 @@
                 `;
             } catch (error) {
                 console.error('Fehler beim Laden der Statistiken:', error);
+                showError('Statistiken konnten nicht geladen werden. Server läuft auf Port 8084?');
             }
         }
 
@@ -641,6 +645,9 @@
         async function loadFilterOptions() {
             try {
                 const response = await fetch(`${API_BASE}/minerals/filters`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const filterData = await response.json();
                 
                 // Farben-Filter füllen
@@ -667,6 +674,7 @@
                 filters = filterData;
             } catch (error) {
                 console.error('Fehler beim Laden der Filter:', error);
+                showError('Filter konnten nicht geladen werden.');
             }
         }
 
@@ -711,8 +719,12 @@
                 displayMinerals();
             } catch (error) {
                 console.error('Fehler beim Laden der Mineralien:', error);
-                grid.innerHTML = '<div class="error-message">Fehler beim Laden der Mineralien. Bitte versuchen Sie es später erneut.</div>';
-                showError('Mineralien konnten nicht geladen werden.');
+                grid.innerHTML = `<div class="error-message">
+                    Fehler beim Laden der Mineralien.<br>
+                    Bitte prüfen Sie, ob der Server auf Port 8084 läuft.<br>
+                    <small>Fehler: ${error.message}</small>
+                </div>`;
+                showError('Mineralien konnten nicht geladen werden. Server erreichbar?');
             }
         }
 
@@ -725,14 +737,17 @@
                 return;
             }
             
+            // Basis-URL für Bilder
+            const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+            
             grid.innerHTML = filteredMinerals.map(mineral => `
                 <div class="mineral-card" onclick="showMineralDetails(${mineral.id})">
                     <div class="mineral-image">
                         ${mineral.image_path 
-                            ? `<img src="/images/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
-                            : `<div class="placeholder">🔸</div>`
+                            ? `<img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                            : `<div class="placeholder">📸</div>`
                         }
-                        ${mineral.image_path ? `<div class="placeholder" style="display:none;">🔸</div>` : ''}
+                        ${mineral.image_path ? `<div class="placeholder" style="display:none;">📸</div>` : ''}
                     </div>
                     <div class="mineral-info">
                         <h3>${mineral.name}</h3>
@@ -777,12 +792,15 @@
                 const mineral = await response.json();
                 const modalContent = document.getElementById('modalContent');
                 
+                // Basis-URL für Bilder
+                const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+                
                 modalContent.innerHTML = `
                     <h2>${mineral.name}</h2>
                     
                     ${mineral.image_path 
-                        ? `<div class="detail-image"><img src="/images/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'"></div>`
-                        : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">🔸</div>'
+                        ? `<div class="detail-image"><img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'"></div>`
+                        : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">📸</div>'
                     }
                     
                     <div class="detail-info">
