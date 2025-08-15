@@ -184,6 +184,44 @@
             background: white;
         }
 
+        .filter-info {
+            background: #e8f5e8;
+            border: 1px solid #c3e6c3;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .filter-info.show {
+            display: block;
+        }
+
+        .filter-tag {
+            display: inline-block;
+            background: #4ecdc4;
+            color: white;
+            padding: 5px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .clear-filters {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+        }
+
+        .clear-filters:hover {
+            background: #ff5252;
+        }
+
         .loading {
             text-align: center;
             padding: 40px;
@@ -453,7 +491,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>🏔️ Meine Mineraliensammlung</h1>
+            <h1>🔬 Meine Mineraliensammlung</h1>
             <p class="subtitle">Entdecken Sie die Schönheit der Natur in meiner persönlichen Sammlung</p>
             <nav>
                 <button onclick="showPage('home')" class="nav-btn active" id="home-btn">Startseite</button>
@@ -499,27 +537,34 @@
             <div class="search-filter-container">
                 <div class="search-section">
                     <h3>🔍 Suche</h3>
-                    <input type="text" id="searchName" class="search-input" placeholder="Nach Name suchen..." onkeyup="filterMinerals()">
-                    <input type="text" id="searchNumber" class="search-input" placeholder="Nach Steinnummer suchen..." onkeyup="filterMinerals()">
+                    <input type="text" id="searchName" class="search-input" placeholder="Nach Name suchen..." onkeyup="applyFiltersAndSort()">
+                    <input type="text" id="searchNumber" class="search-input" placeholder="Nach Steinnummer suchen..." onkeyup="applyFiltersAndSort()">
                 </div>
                 
                 <div class="filter-section">
                     <h3>🎯 Filter</h3>
-                    <select id="colorFilter" class="filter-select" onchange="filterMinerals()">
+                    <select id="colorFilter" class="filter-select" onchange="applyFiltersAndSort()">
                         <option value="">Alle Farben</option>
                     </select>
-                    <select id="locationFilter" class="filter-select" onchange="filterMinerals()">
+                    <select id="locationFilter" class="filter-select" onchange="applyFiltersAndSort()">
                         <option value="">Alle Fundorte</option>
                     </select>
-                    <select id="rockTypeFilter" class="filter-select" onchange="filterMinerals()">
+                    <select id="rockTypeFilter" class="filter-select" onchange="applyFiltersAndSort()">
                         <option value="">Alle Gesteinsarten</option>
                     </select>
                 </div>
             </div>
 
+            <!-- Filter-Info Anzeige -->
+            <div id="filterInfo" class="filter-info">
+                <strong>Aktive Filter:</strong>
+                <span id="filterTags"></span>
+                <button class="clear-filters" onclick="clearAllFilters()">Alle Filter löschen</button>
+            </div>
+
             <div class="sort-section">
                 <label for="sortBy">Sortieren nach: </label>
-                <select id="sortBy" onchange="loadMinerals()">
+                <select id="sortBy" onchange="applyFiltersAndSort()">
                     <option value="name">Alphabet (Name)</option>
                     <option value="number">Steinnummer</option>
                     <option value="color">Farbe</option>
@@ -579,6 +624,14 @@
         let minerals = [];
         let filteredMinerals = [];
         let filters = {};
+        let currentFilters = {
+            name: '',
+            number: '',
+            color: '',
+            location: '',
+            rock_type: '',
+            sortBy: 'name'
+        };
 
         // API Base URL - dynamisch ermittelt
         const API_BASE = window.location.protocol + '//' + window.location.hostname + ':8084/api';
@@ -701,22 +754,136 @@
             }
         }
 
-        // Mineralien laden
+        // Aktuelle Filter auslesen
+        function getCurrentFilters() {
+            return {
+                name: document.getElementById('searchName').value,
+                number: document.getElementById('searchNumber').value,
+                color: document.getElementById('colorFilter').value,
+                location: document.getElementById('locationFilter').value,
+                rock_type: document.getElementById('rockTypeFilter').value,
+                sortBy: document.getElementById('sortBy').value
+            };
+        }
+
+        // Filter-Tags anzeigen
+        function updateFilterDisplay() {
+            const filters = getCurrentFilters();
+            const filterInfo = document.getElementById('filterInfo');
+            const filterTags = document.getElementById('filterTags');
+            
+            let tags = [];
+            let hasActiveFilters = false;
+
+            if (filters.name) {
+                tags.push(`<span class="filter-tag">Name: "${filters.name}"</span>`);
+                hasActiveFilters = true;
+            }
+            if (filters.number) {
+                tags.push(`<span class="filter-tag">Nummer: "${filters.number}"</span>`);
+                hasActiveFilters = true;
+            }
+            if (filters.color) {
+                tags.push(`<span class="filter-tag">Farbe: ${filters.color}</span>`);
+                hasActiveFilters = true;
+            }
+            if (filters.location) {
+                tags.push(`<span class="filter-tag">Fundort: ${filters.location}</span>`);
+                hasActiveFilters = true;
+            }
+            if (filters.rock_type) {
+                tags.push(`<span class="filter-tag">Gesteinsart: ${filters.rock_type}</span>`);
+                hasActiveFilters = true;
+            }
+
+            filterTags.innerHTML = tags.join(' ');
+            
+            if (hasActiveFilters) {
+                filterInfo.classList.add('show');
+            } else {
+                filterInfo.classList.remove('show');
+            }
+        }
+
+        // Alle Filter löschen
+        function clearAllFilters() {
+            document.getElementById('searchName').value = '';
+            document.getElementById('searchNumber').value = '';
+            document.getElementById('colorFilter').value = '';
+            document.getElementById('locationFilter').value = '';
+            document.getElementById('rockTypeFilter').value = '';
+            
+            applyFiltersAndSort();
+        }
+
+        // Filter und Sortierung anwenden (neue Hauptfunktion)
+        function applyFiltersAndSort() {
+            updateFilterDisplay();
+            
+            const filters = getCurrentFilters();
+            console.log('🔍 Angewandte Filter:', filters);
+
+            if (minerals.length === 0) {
+                // Falls noch keine Daten geladen sind, lade sie erst
+                loadMinerals();
+                return;
+            }
+
+            // Client-seitige Filterung
+            filteredMinerals = minerals.filter(mineral => {
+                return (
+                    (filters.name === '' || mineral.name.toLowerCase().includes(filters.name.toLowerCase())) &&
+                    (filters.number === '' || mineral.number.toLowerCase().includes(filters.number.toLowerCase())) &&
+                    (filters.color === '' || mineral.color === filters.color) &&
+                    (filters.location === '' || mineral.location === filters.location) &&
+                    (filters.rock_type === '' || mineral.rock_type === filters.rock_type)
+                );
+            });
+
+            // Client-seitige Sortierung
+            filteredMinerals.sort((a, b) => {
+                let valueA, valueB;
+                
+                switch (filters.sortBy) {
+                    case 'number':
+                        valueA = a.number || '';
+                        valueB = b.number || '';
+                        break;
+                    case 'color':
+                        valueA = a.color || '';
+                        valueB = b.color || '';
+                        break;
+                    default: // 'name'
+                        valueA = a.name || '';
+                        valueB = b.name || '';
+                        break;
+                }
+
+                return valueA.localeCompare(valueB, 'de', { numeric: true });
+            });
+
+            console.log(`✅ ${filteredMinerals.length} von ${minerals.length} Mineralien nach Filterung`);
+            displayMinerals();
+        }
+
+        // Mineralien vom Server laden
         async function loadMinerals() {
             const grid = document.getElementById('mineralsGrid');
             grid.innerHTML = '<div class="loading">Lade Mineralien...</div>';
             
             try {
-                const sortBy = document.getElementById('sortBy').value;
-                const response = await fetch(`${API_BASE}/minerals?sortBy=${sortBy}`);
+                // Nur die grundlegenden Daten laden, ohne Filter-Parameter
+                const response = await fetch(`${API_BASE}/minerals`);
                 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 minerals = await response.json();
-                filteredMinerals = [...minerals];
-                displayMinerals();
+                console.log(`📦 ${minerals.length} Mineralien vom Server geladen`);
+                
+                // Nach dem Laden die Filter anwenden
+                applyFiltersAndSort();
             } catch (error) {
                 console.error('Fehler beim Laden der Mineralien:', error);
                 grid.innerHTML = `<div class="error-message">
@@ -733,7 +900,15 @@
             const grid = document.getElementById('mineralsGrid');
             
             if (filteredMinerals.length === 0) {
-                grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1; padding: 40px;">Keine Mineralien gefunden.</p>';
+                const hasFilters = getCurrentFilters().name || getCurrentFilters().number || 
+                                getCurrentFilters().color || getCurrentFilters().location || 
+                                getCurrentFilters().rock_type;
+                
+                if (hasFilters) {
+                    grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1; padding: 40px;">Keine Mineralien entsprechen den gewählten Filtern.<br><button onclick="clearAllFilters()" style="margin-top: 10px; padding: 10px 20px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer;">Filter zurücksetzen</button></p>';
+                } else {
+                    grid.innerHTML = '<p style="text-align: center; color: #666; grid-column: 1/-1; padding: 40px;">Keine Mineralien gefunden.</p>';
+                }
                 return;
             }
             
@@ -759,25 +934,9 @@
             `).join('');
         }
 
-        // Mineralien filtern
+        // Legacy-Funktion für Rückwärtskompatibilität (wird nicht mehr verwendet)
         function filterMinerals() {
-            const nameSearch = document.getElementById('searchName').value.toLowerCase();
-            const numberSearch = document.getElementById('searchNumber').value.toLowerCase();
-            const colorFilter = document.getElementById('colorFilter').value;
-            const locationFilter = document.getElementById('locationFilter').value;
-            const rockTypeFilter = document.getElementById('rockTypeFilter').value;
-
-            filteredMinerals = minerals.filter(mineral => {
-                return (
-                    (nameSearch === '' || mineral.name.toLowerCase().includes(nameSearch)) &&
-                    (numberSearch === '' || mineral.number.toLowerCase().includes(numberSearch)) &&
-                    (colorFilter === '' || mineral.color === colorFilter) &&
-                    (locationFilter === '' || mineral.location === locationFilter) &&
-                    (rockTypeFilter === '' || mineral.rock_type === rockTypeFilter)
-                );
-            });
-
-            displayMinerals();
+            applyFiltersAndSort();
         }
 
         // Mineral-Details anzeigen
