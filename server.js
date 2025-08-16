@@ -497,7 +497,7 @@ app.listen(PORT, '0.0.0.0', () => {
    Mineraliensammlung Server
 🌟 ================================
 🚀 Server läuft auf: http://localhost:${PORT}
-🌐 Netzwerk-Zugriff: http://[Pi-IP]:${PORT}
+🌐 Netzwerk-Zugriff: http://192.168.178.50:${PORT}
 📁 Bilder-Ordner: ${uploadsDir}
 💾 Datenbank: ./minerals.db
 🕐 Gestartet: ${new Date().toLocaleString('de-DE')}
