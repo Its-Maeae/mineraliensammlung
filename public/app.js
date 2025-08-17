@@ -1213,6 +1213,7 @@ function previewEditShelfImage(event) {
 }
 
 // Bearbeitetes Regal speichern
+// Bearbeitetes Regal speichern - FIXED VERSION
 async function saveEditedShelf(event) {
     event.preventDefault();
     
@@ -1224,14 +1225,53 @@ async function saveEditedShelf(event) {
         const id = document.getElementById('editShelfId').value;
         const formData = new FormData();
         
-        formData.append('name', document.getElementById('editShelfName').value);
-        formData.append('code', document.getElementById('editShelfCode').value.padStart(2, '0'));
-        formData.append('description', document.getElementById('editShelfDescription').value);
-        formData.append('position_order', document.getElementById('editShelfPosition').value || '0');
+        // Werte abrufen und validieren
+        const name = document.getElementById('editShelfName').value.trim();
+        const code = document.getElementById('editShelfCode').value.trim();
+        const description = document.getElementById('editShelfDescription').value.trim();
+        const position = document.getElementById('editShelfPosition').value || '0';
         
+        // Validation
+        if (!name) {
+            showError('Name ist erforderlich');
+            return;
+        }
+        
+        if (!code) {
+            showError('Code ist erforderlich');
+            return;
+        }
+        
+        // Code validieren - nur Zahlen erlaubt
+        if (!/^\d+$/.test(code)) {
+            showError('Code darf nur Zahlen enthalten');
+            return;
+        }
+        
+        // Debug-Ausgabe
+        console.log('Sending shelf data:', {
+            name,
+            code,
+            paddedCode: code.padStart(2, '0'),
+            description,
+            position
+        });
+        
+        formData.append('name', name);
+        formData.append('code', code.padStart(2, '0'));
+        formData.append('description', description);
+        formData.append('position_order', position);
+        
+        // Bild hinzufügen falls hochgeladen
         const imageFile = document.getElementById('editShelfImage').files[0];
         if (imageFile) {
+            console.log('Adding image file:', imageFile.name);
             formData.append('image', imageFile);
+        }
+        
+        // Debug: FormData Inhalt anzeigen
+        for (let [key, value] of formData.entries()) {
+            console.log('FormData:', key, value);
         }
         
         const response = await fetch(`${API_BASE}/shelves/${id}`, {
@@ -1239,7 +1279,13 @@ async function saveEditedShelf(event) {
             body: formData
         });
         
-        const result = await response.json();
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            console.error('Failed to parse JSON response:', e);
+            throw new Error('Server returned invalid response');
+        }
         
         if (response.ok) {
             showSuccess('Regal erfolgreich aktualisiert!');
@@ -1249,12 +1295,13 @@ async function saveEditedShelf(event) {
                 await showShowcaseDetails(currentShowcaseId);
             }
         } else {
-            showError(`Fehler beim Aktualisieren: ${result.error}`);
+            console.error('Server error response:', result);
+            showError(`Fehler beim Aktualisieren: ${result.error || 'Unbekannter Fehler'}`);
         }
         
     } catch (error) {
         console.error('Fehler beim Speichern der Regal-Änderungen:', error);
-        showError('Netzwerkfehler beim Speichern der Änderungen.');
+        showError(`Netzwerkfehler: ${error.message}`);
     } finally {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Änderungen speichern';

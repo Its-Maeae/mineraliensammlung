@@ -556,13 +556,30 @@ app.post('/api/showcases/:showcaseId/shelves', upload.single('image'), (req, res
     });
 });
 
-// Regal aktualisieren
+// Regal aktualisieren - FIXED SERVER ROUTE
 app.put('/api/shelves/:id', upload.single('image'), (req, res) => {
     const { id } = req.params;
     const { name, description, code, position_order } = req.body;
     
+    console.log('Received shelf update request:', {
+        id,
+        name,
+        description, 
+        code,
+        position_order,
+        hasFile: !!req.file
+    });
+    
+    // Validation
     if (!name || !code) {
+        console.log('Validation failed: missing name or code');
         return res.status(400).json({ error: 'Name und Code sind erforderlich' });
+    }
+    
+    // Code format validation
+    if (!/^\d{2}$/.test(code)) {
+        console.log('Validation failed: invalid code format:', code);
+        return res.status(400).json({ error: 'Code muss im Format ##  sein (z.B. 01, 02)' });
     }
     
     db.get(`
@@ -572,40 +589,74 @@ app.put('/api/shelves/:id', upload.single('image'), (req, res) => {
         WHERE sh.id = ?
     `, [id], (err, existingShelf) => {
         if (err) {
+            console.error('Database error finding shelf:', err);
             return res.status(500).json({ error: 'Datenbankfehler' });
         }
         if (!existingShelf) {
+            console.log('Shelf not found with id:', id);
             return res.status(404).json({ error: 'Regal nicht gefunden' });
         }
         
         const fullCode = `${existingShelf.showcase_code}-${code}`;
         let imagePath = existingShelf.image_path;
         
+        console.log('Generated fullCode:', fullCode);
+        
+        // Handle image update
         if (req.file) {
+            console.log('Processing new image:', req.file.filename);
             if (existingShelf.image_path) {
                 const oldImagePath = path.join(uploadsDir, existingShelf.image_path);
                 if (fs.existsSync(oldImagePath)) {
                     fs.unlinkSync(oldImagePath);
+                    console.log('Deleted old image:', existingShelf.image_path);
                 }
             }
             imagePath = req.file.filename;
             processImage(req.file.path);
         }
         
-        const updateQuery = `
-            UPDATE shelves 
-            SET name = ?, description = ?, code = ?, full_code = ?, position_order = ?, image_path = ?
-            WHERE id = ?
-        `;
-        
-        db.run(updateQuery, [name, description, code, fullCode, position_order, imagePath, id], function(err) {
+        // Check for code conflicts (except for current shelf)
+        db.get(`
+            SELECT id FROM shelves 
+            WHERE showcase_id = ? AND code = ? AND id != ?
+        `, [existingShelf.showcase_id, code, id], (err, conflict) => {
             if (err) {
-                console.error('Datenbankfehler:', err);
-                res.status(500).json({ error: 'Datenbankfehler' });
-            } else {
-                console.log(`✅ Regal aktualisiert: ${name} (${fullCode})`);
-                res.json({ id, name, fullCode, message: 'Regal erfolgreich aktualisiert' });
+                console.error('Database error checking code conflict:', err);
+                return res.status(500).json({ error: 'Datenbankfehler' });
             }
+            
+            if (conflict) {
+                console.log('Code conflict detected for code:', code);
+                return res.status(400).json({ 
+                    error: 'Ein Regal mit diesem Code existiert bereits in dieser Vitrine' 
+                });
+            }
+            
+            // Perform the update
+            const updateQuery = `
+                UPDATE shelves 
+                SET name = ?, description = ?, code = ?, full_code = ?, position_order = ?, image_path = ?
+                WHERE id = ?
+            `;
+            
+            const params = [name, description, code, fullCode, position_order || 0, imagePath, id];
+            console.log('Executing update with params:', params);
+            
+            db.run(updateQuery, params, function(err) {
+                if (err) {
+                    console.error('Database error updating shelf:', err);
+                    res.status(500).json({ error: 'Datenbankfehler beim Aktualisieren' });
+                } else {
+                    console.log(`✅ Regal aktualisiert: ${name} (${fullCode})`);
+                    res.json({ 
+                        id, 
+                        name, 
+                        fullCode, 
+                        message: 'Regal erfolgreich aktualisiert' 
+                    });
+                }
+            });
         });
     });
 });
