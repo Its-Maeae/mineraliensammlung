@@ -299,12 +299,21 @@ app.get('/api/showcases', (req, res) => {
     const query = `
         SELECT 
             s.*,
-            COUNT(sh.id) as shelf_count,
-            COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END), 0) as mineral_count
+            COALESCE(shelf_counts.shelf_count, 0) as shelf_count,
+            COALESCE(mineral_counts.mineral_count, 0) as mineral_count
         FROM showcases s
-        LEFT JOIN shelves sh ON s.id = sh.showcase_id
-        LEFT JOIN minerals m ON sh.full_code = m.shelf
-        GROUP BY s.id
+        LEFT JOIN (
+            SELECT showcase_id, COUNT(*) as shelf_count
+            FROM shelves
+            GROUP BY showcase_id
+        ) shelf_counts ON s.id = shelf_counts.showcase_id
+        LEFT JOIN (
+            SELECT sc.id as showcase_id, COUNT(DISTINCT m.id) as mineral_count
+            FROM showcases sc
+            LEFT JOIN shelves sh ON sc.id = sh.showcase_id
+            LEFT JOIN minerals m ON sh.full_code = m.shelf
+            GROUP BY sc.id
+        ) mineral_counts ON s.id = mineral_counts.showcase_id
         ORDER BY s.code
     `;
     
