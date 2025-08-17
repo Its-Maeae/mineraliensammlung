@@ -303,10 +303,11 @@ function displayMinerals() {
         <div class="mineral-card" onclick="showMineralDetails(${mineral.id})">
             <div class="mineral-image">
                 ${mineral.image_path 
-                    ? `<img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                    ? `<img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                       <button class="zoom-btn" onclick="event.stopPropagation(); openImageZoom('${imageBase}/${mineral.image_path}', '${mineral.name}')" title="Bild vergrößern">🔍</button>
+                       <div class="placeholder" style="display:none;">📸</div>`
                     : `<div class="placeholder">📸</div>`
                 }
-                ${mineral.image_path ? `<div class="placeholder" style="display:none;">📸</div>` : ''}
             </div>
             <div class="mineral-info">
                 <h3>${mineral.name}</h3>
@@ -337,7 +338,10 @@ async function showMineralDetails(id) {
             <h2>${mineral.name}</h2>
             
             ${mineral.image_path 
-                ? `<div class="detail-image"><img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'"></div>`
+                ? `<div class="detail-image">
+                     <img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'">
+                     <button class="zoom-btn detail-zoom-btn" onclick="openImageZoom('${imageBase}/${mineral.image_path}', '${mineral.name}')" title="Bild vergrößern">🔍</button>
+                   </div>`
                 : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">📸</div>'
             }
             
@@ -695,7 +699,7 @@ function displayShowcases() {
     if (showcases.length === 0) {
         grid.innerHTML = `
             <div class="no-showcases" style="text-align: center; padding: 40px; grid-column: 1/-1;">
-                <h3 style="color: #666; margin-bottom: 15px;">🏛️ Noch keine Vitrinen vorhanden</h3>
+                <h3 style="color: #666; margin-bottom: 15px;">🛏️ Noch keine Vitrinen vorhanden</h3>
                 <p style="color: #888; margin-bottom: 20px;">Fügen Sie Ihre erste Vitrine hinzu, um Ihre Sammlung zu organisieren.</p>
                 <button onclick="openAddVitrineModal()" class="btn-add">Erste Vitrine hinzufügen</button>
             </div>
@@ -709,10 +713,11 @@ function displayShowcases() {
         <div class="vitrine-card" onclick="showShowcaseDetails(${showcase.id})">
             <div class="vitrine-image">
                 ${showcase.image_path 
-                    ? `<img src="${imageBase}/${showcase.image_path}" alt="${showcase.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
-                    : `<div class="placeholder">🏛️</div>`
+                    ? `<img src="${imageBase}/${showcase.image_path}" alt="${showcase.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                       <button class="zoom-btn" onclick="event.stopPropagation(); openImageZoom('${imageBase}/${showcase.image_path}', '${showcase.name}')" title="Bild vergrößern">🔍</button>
+                       <div class="placeholder" style="display:none;">🛏️</div>`
+                    : `<div class="placeholder">🛏️</div>`
                 }
-                ${showcase.image_path ? `<div class="placeholder" style="display:none;">🏛️</div>` : ''}
             </div>
             <div class="vitrine-info">
                 <h3>${showcase.name}</h3>
@@ -1398,6 +1403,35 @@ function closeShelfMineralsModal() {
     currentShelfId = null;
 }
 
+// Bild-Zoom Modal öffnen
+function openImageZoom(imageSrc, altText = 'Bild') {
+    const modal = document.getElementById('imageZoomModal');
+    const zoomImage = document.getElementById('zoomImage');
+    const caption = document.getElementById('zoomCaption');
+    
+    zoomImage.src = imageSrc;
+    zoomImage.alt = altText;
+    caption.textContent = altText;
+    modal.style.display = 'flex';
+    
+    // Escape-Taste zum Schließen
+    document.addEventListener('keydown', handleZoomEscape);
+}
+
+// Bild-Zoom Modal schließen
+function closeImageZoom() {
+    const modal = document.getElementById('imageZoomModal');
+    modal.style.display = 'none';
+    document.removeEventListener('keydown', handleZoomEscape);
+}
+
+// Escape-Taste Handler für Zoom
+function handleZoomEscape(event) {
+    if (event.key === 'Escape') {
+        closeImageZoom();
+    }
+}
+
 // Modal-Event-Listener erweitern
 const originalWindowClick = window.onclick;
 window.onclick = function(event) {
@@ -1411,6 +1445,7 @@ window.onclick = function(event) {
     const addShelfModal = document.getElementById('addShelfModal');
     const editShelfModal = document.getElementById('editShelfModal');
     const shelfMineralsModal = document.getElementById('shelfMineralsModal');
+    const imageZoomModal = document.getElementById('imageZoomModal');
     
     if (event.target === addVitrineModal) closeAddVitrineModal();
     if (event.target === editVitrineModal) closeEditVitrineModal();
@@ -1418,9 +1453,10 @@ window.onclick = function(event) {
     if (event.target === addShelfModal) closeAddShelfModal();
     if (event.target === editShelfModal) closeEditShelfModal();
     if (event.target === shelfMineralsModal) closeShelfMineralsModal();
+    if (event.target === imageZoomModal) closeImageZoom();
 }
 
-// Keyboard-Navigation erweitern
+// Erweiterte Keyboard-Navigation
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeAddVitrineModal();
@@ -1429,5 +1465,8 @@ document.addEventListener('keydown', function(event) {
         closeAddShelfModal();
         closeEditShelfModal();
         closeShelfMineralsModal();
+        closeImageZoom();
+        closeModal();
+        closeEditModal();
     }
 });

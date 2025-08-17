@@ -131,7 +131,6 @@ nav button.active {
     margin-bottom: 10px;
 }
 
-/* KOMPAKTE FILTER-SEKTION */
 .search-filter-container {
     background: rgba(240, 240, 240, 0.8);
     border-radius: 15px;
@@ -185,7 +184,6 @@ nav button.active {
     border-color: #4ecdc4;
 }
 
-/* KOMPAKTE SORTIERUNG */
 .sort-section {
     display: flex;
     justify-content: center;
@@ -203,7 +201,6 @@ nav button.active {
     background: white;
 }
 
-/* FILTER-INFO KOMPAKTER */
 .filter-info {
     background: #e8f5e8;
     border: 1px solid #c3e6c3;
@@ -250,7 +247,6 @@ nav button.active {
     font-size: 16px;
 }
 
-/* MINERALIEN-GRID OPTIMIERT */
 .minerals-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -492,7 +488,6 @@ nav button.active {
     margin-bottom: 8px;
 }
 
-/* Bearbeitungsmodal Stile */
 .edit-form {
     display: grid;
     gap: 20px;
@@ -559,7 +554,6 @@ nav button.active {
     cursor: pointer;
 }
 
-/* RESPONSIVE DESIGN OPTIMIERT */
 @media (max-width: 768px) {
     .search-filter-container {
         grid-template-columns: 1fr;
@@ -606,9 +600,6 @@ nav button.active {
     }
 }
 
-/* CSS-Erweiterung für das Vitrinensystem - in style.css hinzufügen */
-
-/* Vitrinen-Header */
 .vitrines-header {
     display: flex;
     justify-content: space-between;
@@ -642,7 +633,6 @@ nav button.active {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-/* Vitrinen-Grid */
 .vitrines-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -727,7 +717,6 @@ nav button.active {
     margin-top: 5px;
 }
 
-/* Vitrinen- und Regal-Formulare */
 .vitrine-form, .shelf-form {
     display: grid;
     gap: 20px;
@@ -747,7 +736,6 @@ nav button.active {
     resize: vertical;
 }
 
-/* Modal-Inhalt für Details */
 .modal-content.large {
     max-width: 900px;
     width: 95%;
@@ -926,7 +914,6 @@ nav button.active {
     color: white;
 }
 
-/* Mineralien im Regal */
 .shelf-minerals-header {
     text-align: center;
     margin-bottom: 25px;
@@ -996,7 +983,6 @@ nav button.active {
     border-radius: 10px;
 }
 
-/* Responsive Design für Vitrinen */
 @media (max-width: 768px) {
     .vitrines-header {
         flex-direction: column;
@@ -1046,5 +1032,201 @@ nav button.active {
     
     .shelf-actions {
         flex-direction: column;
+    }
+}
+
+/* Zoom-Button Styling */
+.zoom-btn {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.zoom-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.zoom-btn:active {
+    transform: scale(0.95);
+}
+
+/* Spezielle Position für Detail-Modal */
+.detail-zoom-btn {
+    top: 15px;
+    left: 15px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+}
+
+/* Container für Bilder mit relativer Position für absolute Zoom-Button */
+.mineral-image, .vitrine-image, .shelf-image, .detail-image {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Zoom-Modal Styling */
+.zoom-modal {
+    z-index: 9999;
+    background-color: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(10px);
+}
+
+.zoom-modal-content {
+    position: relative;
+    max-width: 95vw;
+    max-height: 95vh;
+    margin: auto;
+    background: none;
+    border: none;
+    border-radius: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.zoom-image-container {
+    max-width: 100%;
+    max-height: 90vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.zoom-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+    transition: transform 0.3s ease;
+    cursor: zoom-out;
+}
+
+.zoom-image:hover {
+    transform: scale(1.02);
+}
+
+.zoom-caption {
+    color: white;
+    text-align: center;
+    margin-top: 15px;
+    font-size: 16px;
+    font-weight: 500;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    max-width: 90%;
+}
+
+.zoom-close {
+    position: fixed;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 40px;
+    font-weight: bold;
+    cursor: pointer;
+    z-index: 10000;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
+}
+
+.zoom-close:hover {
+    background: rgba(255, 0, 0, 0.7);
+    transform: scale(1.1);
+}
+
+/* Responsive Design für kleine Bildschirme */
+@media (max-width: 768px) {
+    .zoom-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        top: 5px;
+        left: 5px;
+    }
+    
+    .detail-zoom-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        top: 10px;
+        left: 10px;
+    }
+    
+    .zoom-close {
+        top: 15px;
+        right: 15px;
+        font-size: 30px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .zoom-caption {
+        font-size: 14px;
+        margin-top: 10px;
+    }
+}
+
+/* Animation beim Öffnen des Zoom-Modals */
+@keyframes zoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.zoom-modal.show .zoom-image {
+    animation: zoomIn 0.3s ease-out;
+}
+
+/* Zusätzliche Verbesserungen für bestehende Bild-Container */
+.mineral-card:hover .zoom-btn,
+.vitrine-card:hover .zoom-btn,
+.shelf-card:hover .zoom-btn {
+    opacity: 1;
+    visibility: visible;
+}
+
+.zoom-btn {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+}
+
+/* Immer sichtbar auf Touch-Geräten */
+@media (hover: none) and (pointer: coarse) {
+    .zoom-btn {
+        opacity: 1;
+        visibility: visible;
     }
 }
