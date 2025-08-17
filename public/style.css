@@ -588,6 +588,64 @@ nav button.active {
     .sort-section {
         font-size: 13px;
     }
+
+    .zoom-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+        top: 5px;
+        left: 5px;
+    }
+    
+    .detail-zoom-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 14px;
+        top: 10px;
+        left: 10px;
+    }
+    
+    .zoom-close {
+        top: 15px;
+        right: 15px;
+        font-size: 30px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .zoom-caption {
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    .vitrines-header {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .vitrines-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .vitrine-detail-info {
+        grid-template-columns: 1fr;
+    }
+    
+    .shelves-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .shelf-minerals-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+    
+    .modal-content.large {
+        width: 98%;
+        margin: 10px;
+        max-height: 95vh;
+    }
 }
 
 @media (max-width: 480px) {
@@ -597,6 +655,25 @@ nav button.active {
     
     .minerals-grid {
         grid-template-columns: 1fr;
+    }
+
+    .vitrine-image, .vitrine-detail-image {
+        height: 150px;
+        font-size: 50px;
+    }
+    
+    .shelf-image {
+        height: 100px;
+        font-size: 30px;
+    }
+    
+    .shelf-mineral-image {
+        height: 100px;
+        font-size: 30px;
+    }
+    
+    .shelf-actions {
+        flex-direction: column;
     }
 }
 
@@ -983,59 +1060,6 @@ nav button.active {
     border-radius: 10px;
 }
 
-@media (max-width: 768px) {
-    .vitrines-header {
-        flex-direction: column;
-        align-items: stretch;
-        text-align: center;
-    }
-    
-    .vitrines-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .vitrine-detail-info {
-        grid-template-columns: 1fr;
-    }
-    
-    .shelves-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .shelf-minerals-grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-    
-    .modal-content.large {
-        width: 98%;
-        margin: 10px;
-        max-height: 95vh;
-    }
-}
-
-@media (max-width: 480px) {
-    .vitrine-image, .vitrine-detail-image {
-        height: 150px;
-        font-size: 50px;
-    }
-    
-    .shelf-image {
-        height: 100px;
-        font-size: 30px;
-    }
-    
-    .shelf-mineral-image {
-        height: 100px;
-        font-size: 30px;
-    }
-    
-    .shelf-actions {
-        flex-direction: column;
-    }
-}
-
-/* Zoom-Button Styling */
 .zoom-btn {
     position: absolute;
     top: 8px;
@@ -1066,7 +1090,6 @@ nav button.active {
     transform: scale(0.95);
 }
 
-/* Spezielle Position für Detail-Modal */
 .detail-zoom-btn {
     top: 15px;
     left: 15px;
@@ -1075,13 +1098,11 @@ nav button.active {
     font-size: 16px;
 }
 
-/* Container für Bilder mit relativer Position für absolute Zoom-Button */
 .mineral-image, .vitrine-image, .shelf-image, .detail-image {
     position: relative;
     overflow: hidden;
 }
 
-/* Zoom-Modal Styling */
 .zoom-modal {
     z-index: 9999;
     background-color: rgba(0, 0, 0, 0.95);
@@ -1161,39 +1182,6 @@ nav button.active {
     transform: scale(1.1);
 }
 
-/* Responsive Design für kleine Bildschirme */
-@media (max-width: 768px) {
-    .zoom-btn {
-        width: 28px;
-        height: 28px;
-        font-size: 12px;
-        top: 5px;
-        left: 5px;
-    }
-    
-    .detail-zoom-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 14px;
-        top: 10px;
-        left: 10px;
-    }
-    
-    .zoom-close {
-        top: 15px;
-        right: 15px;
-        font-size: 30px;
-        width: 40px;
-        height: 40px;
-    }
-    
-    .zoom-caption {
-        font-size: 14px;
-        margin-top: 10px;
-    }
-}
-
-/* Animation beim Öffnen des Zoom-Modals */
 @keyframes zoomIn {
     from {
         opacity: 0;
@@ -1209,7 +1197,6 @@ nav button.active {
     animation: zoomIn 0.3s ease-out;
 }
 
-/* Zusätzliche Verbesserungen für bestehende Bild-Container */
 .mineral-card:hover .zoom-btn,
 .vitrine-card:hover .zoom-btn,
 .shelf-card:hover .zoom-btn {
