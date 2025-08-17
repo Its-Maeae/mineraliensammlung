@@ -52,7 +52,7 @@ const upload = multer({
     storage: storage,
     fileFilter: fileFilter,
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB Limit
+        fileSize: 40 * 1024 * 1024 // 10MB Limit
     }
 });
 
@@ -1066,7 +1066,7 @@ app.get('/api/stats', (req, res) => {
 app.use((error, req, res, next) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {
-            return res.status(400).json({ error: 'Datei zu groß. Maximum 10MB erlaubt.' });
+            return res.status(400).json({ error: 'Datei zu groß. Maximum 40MB erlaubt.' });
         }
     }
     if (error.message === 'Nur Bilddateien sind erlaubt (JPEG, PNG, GIF, WebP)') {

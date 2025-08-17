@@ -422,7 +422,7 @@ async function openEditModal(id) {
         } else {
             editImagePreview.innerHTML = `
                 📸 Neues Bild hochladen (optional)<br>
-                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
             `;
         }
         
@@ -499,7 +499,7 @@ function closeEditModal() {
     document.getElementById('editForm').reset();
     document.getElementById('editImagePreview').innerHTML = `
         📸 Neues Bild hochladen (optional)<br>
-        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+        <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
     `;
 }
 
@@ -542,7 +542,7 @@ function previewImage(event) {
     } else {
         preview.innerHTML = `
             📸 Klicken Sie hier um ein Bild hochzuladen<br>
-            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
         `;
     }
 }
@@ -584,7 +584,7 @@ async function addMineral(event) {
             event.target.reset();
             document.getElementById('imagePreview').innerHTML = `
                 📸 Klicken Sie hier um ein Bild hochzuladen<br>
-                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
             `;
             
             // Filter-Optionen neu laden
@@ -741,7 +741,7 @@ function openAddVitrineModal() {
     document.getElementById('addVitrineForm').reset();
     document.getElementById('vitrineImagePreview').innerHTML = `
         🏛️ Foto der Vitrine hochladen (optional)<br>
-        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+        <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
     `;
 }
 
@@ -767,7 +767,7 @@ function previewVitrineImage(event) {
     } else {
         preview.innerHTML = `
             🏛️ Foto der Vitrine hochladen (optional)<br>
-            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
         `;
     }
 }
@@ -940,7 +940,7 @@ async function openEditShowcaseModal(id) {
         } else {
             editImagePreview.innerHTML = `
                 🏛️ Neues Foto hochladen (optional)<br>
-                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
             `;
         }
         
@@ -1057,7 +1057,7 @@ function openAddShelfModal(showcaseId) {
     document.getElementById('addShelfForm').reset();
     document.getElementById('shelfImagePreview').innerHTML = `
         📚 Foto des Regals hochladen (optional)<br>
-        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+        <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
     `;
 }
 
@@ -1084,7 +1084,7 @@ function previewShelfImage(event) {
     } else {
         preview.innerHTML = `
             📚 Foto des Regals hochladen (optional)<br>
-            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
         `;
     }
 }
@@ -1178,7 +1178,7 @@ async function openEditShelfModal(shelfId) {
         } else {
             editImagePreview.innerHTML = `
                 📚 Neues Foto hochladen (optional)<br>
-                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
             `;
         }
         
