@@ -59,9 +59,551 @@ function initDatabase() {
         } else {
             console.log('✅ Datenbank-Tabelle bereit.');
             insertSampleData();
+            initVitrineSystem();
         }
     });
 }
+
+// Erweiterte Datenbank-Schema-Erstellung
+function initVitrineSystem() {
+    console.log('🏛️ Initialisiere Vitrinensystem...');
+    
+    // Vitrinen-Tabelle
+    const createShowcasesTable = `
+        CREATE TABLE IF NOT EXISTS showcases (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            location TEXT,
+            description TEXT,
+            image_path TEXT,
+            code TEXT UNIQUE NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    `;
+    
+    // Regale-Tabelle
+    const createShelvesTable = `
+        CREATE TABLE IF NOT EXISTS shelves (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            showcase_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            image_path TEXT,
+            code TEXT NOT NULL,
+            full_code TEXT NOT NULL,
+            position_order INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (showcase_id) REFERENCES showcases (id) ON DELETE CASCADE,
+            UNIQUE(showcase_id, code)
+        )
+    `;
+    
+    db.serialize(() => {
+        db.run(createShowcasesTable, (err) => {
+            if (err) {
+                console.error('Fehler beim Erstellen der Vitrinen-Tabelle:', err);
+            } else {
+                console.log('✅ Vitrinen-Tabelle bereit.');
+            }
+        });
+        
+        db.run(createShelvesTable, (err) => {
+            if (err) {
+                console.error('Fehler beim Erstellen der Regale-Tabelle:', err);
+            } else {
+                console.log('✅ Regale-Tabelle bereit.');
+                // Nach dem Erstellen der Tabellen die automatische Erstellung starten
+                autoCreateShowcasesAndShelves();
+            }
+        });
+    });
+}
+
+// Automatisches Erstellen von Vitrinen und Regalen basierend auf vorhandenen Mineralien
+function autoCreateShowcasesAndShelves() {
+    console.log('🔍 Analysiere vorhandene Mineralien für automatische Vitrine/Regal-Erstellung...');
+    
+    db.all("SELECT DISTINCT shelf FROM minerals WHERE shelf IS NOT NULL AND shelf != '' AND shelf LIKE '%-%'", [], (err, rows) => {
+        if (err) {
+            console.error('Fehler beim Analysieren der Regale:', err);
+            return;
+        }
+        
+        const shelvesCodes = rows.map(row => row.shelf);
+        const showcasesSet = new Set();
+        const shelvesData = [];
+        
+        shelvesCodes.forEach(shelfCode => {
+            const match = shelfCode.match(/^(V\d+)-(.+)$/);
+            if (match) {
+                const showcaseCode = match[1];
+                const shelfOnlyCode = match[2];
+                
+                showcasesSet.add(showcaseCode);
+                shelvesData.push({
+                    showcaseCode,
+                    shelfCode: shelfOnlyCode,
+                    fullCode: shelfCode
+                });
+            }
+        });
+        
+        console.log(`🏛️ Gefunden: ${showcasesSet.size} Vitrinen, ${shelvesData.length} Regale`);
+        
+        // Vitrinen erstellen
+        const showcasePromises = Array.from(showcasesSet).map(showcaseCode => {
+            return new Promise((resolve) => {
+                const vitrineName = `Vitrine ${showcaseCode.substring(1)}`;
+                
+                db.run(
+                    'INSERT OR IGNORE INTO showcases (name, code, description) VALUES (?, ?, ?)',
+                    [vitrineName, showcaseCode, `Automatisch erstellt aus vorhandenen Mineralien`],
+                    function(err) {
+                        if (err) {
+                            console.error(`Fehler beim Erstellen der Vitrine ${showcaseCode}:`, err);
+                        } else {
+                            console.log(`✅ Vitrine erstellt: ${vitrineName} (${showcaseCode})`);
+                        }
+                        resolve();
+                    }
+                );
+            });
+        });
+        
+        // Warten bis alle Vitrinen erstellt sind, dann Regale erstellen
+        Promise.all(showcasePromises).then(() => {
+            // Regale erstellen
+            shelvesData.forEach(shelfData => {
+                db.get('SELECT id FROM showcases WHERE code = ?', [shelfData.showcaseCode], (err, showcaseRow) => {
+                    if (err || !showcaseRow) {
+                        console.error(`Vitrine ${shelfData.showcaseCode} nicht gefunden`);
+                        return;
+                    }
+                    
+                    const regalName = `Regal ${shelfData.shelfCode}`;
+                    
+                    db.run(
+                        'INSERT OR IGNORE INTO shelves (showcase_id, name, code, full_code, description) VALUES (?, ?, ?, ?, ?)',
+                        [
+                            showcaseRow.id, 
+                            regalName, 
+                            shelfData.shelfCode, 
+                            shelfData.fullCode,
+                            `Automatisch erstellt aus vorhandenen Mineralien`
+                        ],
+                        function(err) {
+                            if (err) {
+                                console.error(`Fehler beim Erstellen des Regals ${shelfData.fullCode}:`, err);
+                            } else {
+                                console.log(`✅ Regal erstellt: ${regalName} (${shelfData.fullCode})`);
+                            }
+                        }
+                    );
+                });
+            });
+        });
+    });
+}
+
+// API ROUTES FÜR VITRINEN
+
+// Alle Vitrinen abrufen
+app.get('/api/showcases', (req, res) => {
+    const query = `
+        SELECT 
+            s.*,
+            COUNT(sh.id) as shelf_count,
+            COALESCE(SUM(CASE WHEN m.id IS NOT NULL THEN 1 ELSE 0 END), 0) as mineral_count
+        FROM showcases s
+        LEFT JOIN shelves sh ON s.id = sh.showcase_id
+        LEFT JOIN minerals m ON sh.full_code = m.shelf
+        GROUP BY s.id
+        ORDER BY s.code
+    `;
+    
+    db.all(query, [], (err, rows) => {
+        if (err) {
+            console.error('Datenbankfehler beim Abrufen der Vitrinen:', err);
+            res.status(500).json({ error: 'Datenbankfehler' });
+        } else {
+            res.json(rows);
+        }
+    });
+});
+
+// Einzelne Vitrine mit Regalen abrufen
+app.get('/api/showcases/:id', (req, res) => {
+    const { id } = req.params;
+    
+    const showcaseQuery = 'SELECT * FROM showcases WHERE id = ?';
+    const shelvesQuery = `
+        SELECT 
+            sh.*,
+            COUNT(m.id) as mineral_count
+        FROM shelves sh
+        LEFT JOIN minerals m ON sh.full_code = m.shelf
+        WHERE sh.showcase_id = ?
+        GROUP BY sh.id
+        ORDER BY sh.position_order, sh.code
+    `;
+    
+    db.get(showcaseQuery, [id], (err, showcase) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!showcase) {
+            return res.status(404).json({ error: 'Vitrine nicht gefunden' });
+        }
+        
+        db.all(shelvesQuery, [id], (err, shelves) => {
+            if (err) {
+                return res.status(500).json({ error: 'Datenbankfehler' });
+            }
+            
+            res.json({
+                ...showcase,
+                shelves: shelves
+            });
+        });
+    });
+});
+
+// Neue Vitrine erstellen
+app.post('/api/showcases', upload.single('image'), (req, res) => {
+    const { name, location, description, code } = req.body;
+    
+    if (!name || !code) {
+        return res.status(400).json({ error: 'Name und Code sind erforderlich' });
+    }
+    
+    // Code-Format validieren (V + Zahlen)
+    if (!/^V\d+$/.test(code)) {
+        return res.status(400).json({ error: 'Code muss im Format V## sein (z.B. V01)' });
+    }
+    
+    let imagePath = null;
+    if (req.file) {
+        imagePath = req.file.filename;
+        processImage(req.file.path);
+    }
+    
+    const insertQuery = `
+        INSERT INTO showcases (name, location, description, code, image_path)
+        VALUES (?, ?, ?, ?, ?)
+    `;
+    
+    db.run(insertQuery, [name, location, description, code, imagePath], function(err) {
+        if (err) {
+            if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+                res.status(400).json({ error: 'Eine Vitrine mit diesem Code existiert bereits' });
+            } else {
+                console.error('Datenbankfehler:', err);
+                res.status(500).json({ error: 'Datenbankfehler' });
+            }
+        } else {
+            console.log(`✅ Neue Vitrine hinzugefügt: ${name} (${code})`);
+            res.json({
+                id: this.lastID,
+                name,
+                code,
+                message: 'Vitrine erfolgreich hinzugefügt'
+            });
+        }
+    });
+});
+
+// Vitrine aktualisieren
+app.put('/api/showcases/:id', upload.single('image'), (req, res) => {
+    const { id } = req.params;
+    const { name, location, description, code } = req.body;
+    
+    if (!name || !code) {
+        return res.status(400).json({ error: 'Name und Code sind erforderlich' });
+    }
+    
+    if (!/^V\d+$/.test(code)) {
+        return res.status(400).json({ error: 'Code muss im Format V## sein (z.B. V01)' });
+    }
+    
+    db.get('SELECT * FROM showcases WHERE id = ?', [id], (err, existingShowcase) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!existingShowcase) {
+            return res.status(404).json({ error: 'Vitrine nicht gefunden' });
+        }
+        
+        let imagePath = existingShowcase.image_path;
+        
+        if (req.file) {
+            if (existingShowcase.image_path) {
+                const oldImagePath = path.join(uploadsDir, existingShowcase.image_path);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            imagePath = req.file.filename;
+            processImage(req.file.path);
+        }
+        
+        const updateQuery = `
+            UPDATE showcases 
+            SET name = ?, location = ?, description = ?, code = ?, image_path = ?
+            WHERE id = ?
+        `;
+        
+        db.run(updateQuery, [name, location, description, code, imagePath, id], function(err) {
+            if (err) {
+                console.error('Datenbankfehler:', err);
+                res.status(500).json({ error: 'Datenbankfehler' });
+            } else {
+                console.log(`✅ Vitrine aktualisiert: ${name} (${code})`);
+                res.json({ id, name, message: 'Vitrine erfolgreich aktualisiert' });
+            }
+        });
+    });
+});
+
+// Vitrine löschen
+app.delete('/api/showcases/:id', (req, res) => {
+    const { id } = req.params;
+    
+    db.get('SELECT * FROM showcases WHERE id = ?', [id], (err, showcase) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!showcase) {
+            return res.status(404).json({ error: 'Vitrine nicht gefunden' });
+        }
+        
+        // Prüfen ob Regale mit Mineralien existieren
+        db.get(`
+            SELECT COUNT(*) as count 
+            FROM shelves sh 
+            LEFT JOIN minerals m ON sh.full_code = m.shelf 
+            WHERE sh.showcase_id = ? AND m.id IS NOT NULL
+        `, [id], (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: 'Datenbankfehler' });
+            }
+            
+            if (result.count > 0) {
+                return res.status(400).json({ 
+                    error: 'Vitrine kann nicht gelöscht werden, da noch Mineralien zugeordnet sind' 
+                });
+            }
+            
+            // Bild löschen falls vorhanden
+            if (showcase.image_path) {
+                const imagePath = path.join(uploadsDir, showcase.image_path);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                }
+            }
+            
+            // Vitrine löschen (Regale werden durch CASCADE automatisch gelöscht)
+            db.run('DELETE FROM showcases WHERE id = ?', [id], function(err) {
+                if (err) {
+                    console.error('Datenbankfehler:', err);
+                    res.status(500).json({ error: 'Datenbankfehler' });
+                } else {
+                    console.log(`🗑️ Vitrine gelöscht: ${showcase.name}`);
+                    res.json({ message: 'Vitrine erfolgreich gelöscht' });
+                }
+            });
+        });
+    });
+});
+
+// API ROUTES FÜR REGALE
+
+// Neues Regal zu einer Vitrine hinzufügen
+app.post('/api/showcases/:showcaseId/shelves', upload.single('image'), (req, res) => {
+    const { showcaseId } = req.params;
+    const { name, description, code, position_order = 0 } = req.body;
+    
+    if (!name || !code) {
+        return res.status(400).json({ error: 'Name und Code sind erforderlich' });
+    }
+    
+    // Vitrine existiert?
+    db.get('SELECT * FROM showcases WHERE id = ?', [showcaseId], (err, showcase) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!showcase) {
+            return res.status(404).json({ error: 'Vitrine nicht gefunden' });
+        }
+        
+        const fullCode = `${showcase.code}-${code}`;
+        let imagePath = null;
+        
+        if (req.file) {
+            imagePath = req.file.filename;
+            processImage(req.file.path);
+        }
+        
+        const insertQuery = `
+            INSERT INTO shelves (showcase_id, name, description, code, full_code, position_order, image_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        
+        db.run(insertQuery, [showcaseId, name, description, code, fullCode, position_order, imagePath], function(err) {
+            if (err) {
+                if (err.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+                    res.status(400).json({ error: 'Ein Regal mit diesem Code existiert bereits in dieser Vitrine' });
+                } else {
+                    console.error('Datenbankfehler:', err);
+                    res.status(500).json({ error: 'Datenbankfehler' });
+                }
+            } else {
+                console.log(`✅ Neues Regal hinzugefügt: ${name} (${fullCode})`);
+                res.json({
+                    id: this.lastID,
+                    name,
+                    fullCode,
+                    message: 'Regal erfolgreich hinzugefügt'
+                });
+            }
+        });
+    });
+});
+
+// Regal aktualisieren
+app.put('/api/shelves/:id', upload.single('image'), (req, res) => {
+    const { id } = req.params;
+    const { name, description, code, position_order } = req.body;
+    
+    if (!name || !code) {
+        return res.status(400).json({ error: 'Name und Code sind erforderlich' });
+    }
+    
+    db.get(`
+        SELECT sh.*, sc.code as showcase_code 
+        FROM shelves sh 
+        LEFT JOIN showcases sc ON sh.showcase_id = sc.id 
+        WHERE sh.id = ?
+    `, [id], (err, existingShelf) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!existingShelf) {
+            return res.status(404).json({ error: 'Regal nicht gefunden' });
+        }
+        
+        const fullCode = `${existingShelf.showcase_code}-${code}`;
+        let imagePath = existingShelf.image_path;
+        
+        if (req.file) {
+            if (existingShelf.image_path) {
+                const oldImagePath = path.join(uploadsDir, existingShelf.image_path);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            }
+            imagePath = req.file.filename;
+            processImage(req.file.path);
+        }
+        
+        const updateQuery = `
+            UPDATE shelves 
+            SET name = ?, description = ?, code = ?, full_code = ?, position_order = ?, image_path = ?
+            WHERE id = ?
+        `;
+        
+        db.run(updateQuery, [name, description, code, fullCode, position_order, imagePath, id], function(err) {
+            if (err) {
+                console.error('Datenbankfehler:', err);
+                res.status(500).json({ error: 'Datenbankfehler' });
+            } else {
+                console.log(`✅ Regal aktualisiert: ${name} (${fullCode})`);
+                res.json({ id, name, fullCode, message: 'Regal erfolgreich aktualisiert' });
+            }
+        });
+    });
+});
+
+// Regal löschen
+app.delete('/api/shelves/:id', (req, res) => {
+    const { id } = req.params;
+    
+    db.get('SELECT * FROM shelves WHERE id = ?', [id], (err, shelf) => {
+        if (err) {
+            return res.status(500).json({ error: 'Datenbankfehler' });
+        }
+        if (!shelf) {
+            return res.status(404).json({ error: 'Regal nicht gefunden' });
+        }
+        
+        // Prüfen ob noch Mineralien zugeordnet sind
+        db.get('SELECT COUNT(*) as count FROM minerals WHERE shelf = ?', [shelf.full_code], (err, result) => {
+            if (err) {
+                return res.status(500).json({ error: 'Datenbankfehler' });
+            }
+            
+            if (result.count > 0) {
+                return res.status(400).json({ 
+                    error: 'Regal kann nicht gelöscht werden, da noch Mineralien zugeordnet sind' 
+                });
+            }
+            
+            // Bild löschen
+            if (shelf.image_path) {
+                const imagePath = path.join(uploadsDir, shelf.image_path);
+                if (fs.existsSync(imagePath)) {
+                    fs.unlinkSync(imagePath);
+                }
+            }
+            
+            db.run('DELETE FROM shelves WHERE id = ?', [id], function(err) {
+                if (err) {
+                    console.error('Datenbankfehler:', err);
+                    res.status(500).json({ error: 'Datenbankfehler' });
+                } else {
+                    console.log(`🗑️ Regal gelöscht: ${shelf.name}`);
+                    res.json({ message: 'Regal erfolgreich gelöscht' });
+                }
+            });
+        });
+    });
+});
+
+// Mineralien für ein bestimmtes Regal abrufen
+app.get('/api/shelves/:id/minerals', (req, res) => {
+    const { id } = req.params;
+    
+    const query = `
+        SELECT m.*, sh.name as shelf_name, sc.name as showcase_name
+        FROM shelves sh
+        LEFT JOIN minerals m ON sh.full_code = m.shelf
+        LEFT JOIN showcases sc ON sh.showcase_id = sc.id
+        WHERE sh.id = ?
+        ORDER BY m.name
+    `;
+    
+    db.all(query, [id], (err, rows) => {
+        if (err) {
+            console.error('Datenbankfehler:', err);
+            res.status(500).json({ error: 'Datenbankfehler' });
+        } else {
+            // Erste Row enthält Regal-Infos, auch wenn keine Mineralien vorhanden
+            const shelfInfo = rows.length > 0 ? {
+                shelf_name: rows[0].shelf_name,
+                showcase_name: rows[0].showcase_name
+            } : null;
+            
+            const minerals = rows.filter(row => row.id !== null);
+            
+            res.json({
+                shelfInfo,
+                minerals
+            });
+        }
+    });
+});
+
+// In der initDatabase() Funktion nach dem insertSampleData() Aufruf hinzufügen:
+// initVitrineSystem();
 
 // Beispieldaten einfügen (nur beim ersten Start)
 function insertSampleData() {

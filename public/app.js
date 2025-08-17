@@ -1,6 +1,9 @@
 let minerals = [];
 let filteredMinerals = [];
 let filters = {};
+let showcases = [];
+let currentShowcaseId = null;
+let currentShelfId = null;
 let currentFilters = {
     search: '',
     color: '',
@@ -124,8 +127,12 @@ function showPage(pageId) {
     document.getElementById(pageId + '-btn').classList.add('active');
     
     if (pageId === 'collection') {
-        loadMinerals();
-    } else if (pageId === 'home') {
+        loadMinerals();  
+    } 
+    if (pageId === 'vitrines') {
+        loadShowcases();
+    }
+    else if (pageId === 'home') {
         loadStats();
     }
 }
@@ -648,5 +655,732 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeModal();
         closeEditModal();
+    }
+});
+
+// JavaScript-Erweiterung für das Vitrinensystem - in app.js hinzufügen
+
+// VITRINEN-MANAGEMENT
+
+// Vitrinen laden
+async function loadShowcases() {
+    const grid = document.getElementById('vitrinesGrid');
+    grid.innerHTML = '<div class="loading">Lade Vitrinen...</div>';
+    
+    try {
+        const response = await fetch(`${API_BASE}/showcases`);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        showcases = await response.json();
+        console.log(`🏛️ ${showcases.length} Vitrinen geladen`);
+        
+        displayShowcases();
+    } catch (error) {
+        console.error('Fehler beim Laden der Vitrinen:', error);
+        grid.innerHTML = `<div class="error-message">
+            Fehler beim Laden der Vitrinen.<br>
+            <small>Fehler: ${error.message}</small>
+        </div>`;
+        showError('Vitrinen konnten nicht geladen werden.');
+    }
+}
+
+// Vitrinen anzeigen
+function displayShowcases() {
+    const grid = document.getElementById('vitrinesGrid');
+    
+    if (showcases.length === 0) {
+        grid.innerHTML = `
+            <div class="no-showcases" style="text-align: center; padding: 40px; grid-column: 1/-1;">
+                <h3 style="color: #666; margin-bottom: 15px;">🏛️ Noch keine Vitrinen vorhanden</h3>
+                <p style="color: #888; margin-bottom: 20px;">Fügen Sie Ihre erste Vitrine hinzu, um Ihre Sammlung zu organisieren.</p>
+                <button onclick="openAddVitrineModal()" class="btn-add">Erste Vitrine hinzufügen</button>
+            </div>
+        `;
+        return;
+    }
+    
+    const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+    
+    grid.innerHTML = showcases.map(showcase => `
+        <div class="vitrine-card" onclick="showShowcaseDetails(${showcase.id})">
+            <div class="vitrine-image">
+                ${showcase.image_path 
+                    ? `<img src="${imageBase}/${showcase.image_path}" alt="${showcase.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                    : `<div class="placeholder">🏛️</div>`
+                }
+                ${showcase.image_path ? `<div class="placeholder" style="display:none;">🏛️</div>` : ''}
+            </div>
+            <div class="vitrine-info">
+                <h3>${showcase.name}</h3>
+                <p><strong>Code:</strong> ${showcase.code}</p>
+                <p><strong>Standort:</strong> ${showcase.location || 'Nicht angegeben'}</p>
+                <p><strong>Beschreibung:</strong> ${showcase.description ? (showcase.description.substring(0, 80) + '...') : 'Keine Beschreibung'}</p>
+                
+                <div class="vitrine-stats">
+                    <div class="vitrine-stat">
+                        <span class="vitrine-stat-number">${showcase.shelf_count || 0}</span>
+                        <span class="vitrine-stat-label">Regale</span>
+                    </div>
+                    <div class="vitrine-stat">
+                        <span class="vitrine-stat-number">${showcase.mineral_count || 0}</span>
+                        <span class="vitrine-stat-label">Mineralien</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Modal für neue Vitrine öffnen
+function openAddVitrineModal() {
+    document.getElementById('addVitrineModal').style.display = 'flex';
+    document.getElementById('addVitrineForm').reset();
+    document.getElementById('vitrineImagePreview').innerHTML = `
+        🏛️ Foto der Vitrine hochladen (optional)<br>
+        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+    `;
+}
+
+// Modal für neue Vitrine schließen
+function closeAddVitrineModal() {
+    document.getElementById('addVitrineModal').style.display = 'none';
+}
+
+// Bild-Vorschau für Vitrine
+function previewVitrineImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('vitrineImagePreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <img src="${e.target.result}" class="preview-image" alt="Vorschau">
+                <br><small>${file.name}</small>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = `
+            🏛️ Foto der Vitrine hochladen (optional)<br>
+            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+        `;
+    }
+}
+
+// Neue Vitrine hinzufügen
+async function addVitrine(event) {
+    event.preventDefault();
+    
+    const submitBtn = document.getElementById('addVitrineBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Wird hinzugefügt...';
+    
+    try {
+        const formData = new FormData();
+        formData.append('name', document.getElementById('vitrineName').value);
+        formData.append('code', document.getElementById('vitrineCode').value.toUpperCase());
+        formData.append('location', document.getElementById('vitrineLocation').value);
+        formData.append('description', document.getElementById('vitrineDescription').value);
+        
+        const imageFile = document.getElementById('vitrineImage').files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        const response = await fetch(`${API_BASE}/showcases`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Vitrine erfolgreich hinzugefügt!');
+            closeAddVitrineModal();
+            await loadShowcases();
+        } else {
+            showError(`Fehler: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Hinzufügen der Vitrine:', error);
+        showError('Netzwerkfehler beim Hinzufügen der Vitrine.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Vitrine hinzufügen';
+    }
+}
+
+// Vitrine-Details anzeigen
+async function showShowcaseDetails(id) {
+    try {
+        const response = await fetch(`${API_BASE}/showcases/${id}`);
+        
+        if (!response.ok) {
+            throw new Error(`Vitrine nicht gefunden`);
+        }
+        
+        const showcase = await response.json();
+        const modalContent = document.getElementById('vitrineDetailContent');
+        const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+        
+        modalContent.innerHTML = `
+            <div class="vitrine-detail-header">
+                <h2>${showcase.name}</h2>
+                
+                ${showcase.image_path 
+                    ? `<div class="vitrine-detail-image"><img src="${imageBase}/${showcase.image_path}" alt="${showcase.name}" onerror="this.style.display='none'; this.parentElement.innerHTML='🏛️'"></div>`
+                    : '<div class="vitrine-detail-image">🏛️</div>'
+                }
+                
+                <div class="vitrine-detail-info">
+                    <div class="detail-info-card">
+                        <h4>Vitrine-Code</h4>
+                        <p>${showcase.code}</p>
+                    </div>
+                    <div class="detail-info-card">
+                        <h4>Standort</h4>
+                        <p>${showcase.location || 'Nicht angegeben'}</p>
+                    </div>
+                    <div class="detail-info-card">
+                        <h4>Regale</h4>
+                        <p>${showcase.shelves.length}</p>
+                    </div>
+                    <div class="detail-info-card">
+                        <h4>Mineralien gesamt</h4>
+                        <p>${showcase.shelves.reduce((sum, shelf) => sum + shelf.mineral_count, 0)}</p>
+                    </div>
+                </div>
+                
+                <p style="color: #555; line-height: 1.6; margin-top: 15px;">
+                    ${showcase.description || 'Keine Beschreibung verfügbar.'}
+                </p>
+                
+                <div class="vitrine-actions">
+                    <button onclick="openEditShowcaseModal(${showcase.id})" class="btn-edit">Vitrine bearbeiten</button>
+                    <button onclick="deleteShowcase(${showcase.id})" class="btn-delete">Vitrine löschen</button>
+                </div>
+            </div>
+            
+            <div class="shelves-section">
+                <h3>
+                    📚 Regale in dieser Vitrine
+                    <button onclick="openAddShelfModal(${showcase.id})" class="btn-add-shelf">Neues Regal hinzufügen</button>
+                </h3>
+                
+                ${showcase.shelves.length === 0 
+                    ? '<div class="no-shelves" style="text-align: center; padding: 20px; color: #666; font-style: italic;">Noch keine Regale vorhanden. Fügen Sie das erste Regal hinzu!</div>'
+                    : `<div class="shelves-grid">${showcase.shelves.map(shelf => `
+                        <div class="shelf-card" onclick="showShelfMinerals(${shelf.id})">
+                            <div class="shelf-image">
+                                ${shelf.image_path 
+                                    ? `<img src="${imageBase}/${shelf.image_path}" alt="${shelf.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                                    : `<div class="placeholder">📚</div>`
+                                }
+                                ${shelf.image_path ? `<div class="placeholder" style="display:none;">📚</div>` : ''}
+                            </div>
+                            <div class="shelf-info">
+                                <h4>${shelf.name}</h4>
+                                <p><strong>Code:</strong> ${shelf.full_code}</p>
+                                <p><strong>Position:</strong> ${shelf.position_order}</p>
+                                <p>${shelf.description ? (shelf.description.substring(0, 60) + '...') : 'Keine Beschreibung'}</p>
+                                <span class="shelf-mineral-count">${shelf.mineral_count} Mineralien</span>
+                            </div>
+                            <div class="shelf-actions" onclick="event.stopPropagation()">
+                                <button onclick="openEditShelfModal(${shelf.id})" class="btn-shelf-edit">Bearbeiten</button>
+                                <button onclick="deleteShelf(${shelf.id})" class="btn-shelf-delete">Löschen</button>
+                            </div>
+                        </div>
+                    `).join('')}</div>`
+                }
+            </div>
+        `;
+
+        document.getElementById('vitrineDetailModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Fehler beim Laden der Vitrine-Details:', error);
+        showError('Details konnten nicht geladen werden.');
+    }
+}
+
+// Vitrine-Detail-Modal schließen
+function closeVitrineDetailModal() {
+    document.getElementById('vitrineDetailModal').style.display = 'none';
+}
+
+// VITRINE BEARBEITEN
+
+// Bearbeitungsmodal für Vitrine öffnen
+async function openEditShowcaseModal(id) {
+    try {
+        const response = await fetch(`${API_BASE}/showcases/${id}`);
+        if (!response.ok) {
+            throw new Error(`Vitrine nicht gefunden`);
+        }
+        
+        const showcase = await response.json();
+        
+        document.getElementById('editVitrineId').value = showcase.id;
+        document.getElementById('editVitrineName').value = showcase.name;
+        document.getElementById('editVitrineCode').value = showcase.code;
+        document.getElementById('editVitrineLocation').value = showcase.location || '';
+        document.getElementById('editVitrineDescription').value = showcase.description || '';
+        
+        const editImagePreview = document.getElementById('editVitrineImagePreview');
+        if (showcase.image_path) {
+            const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+            editImagePreview.innerHTML = `
+                <img src="${imageBase}/${showcase.image_path}" class="preview-image" alt="Aktuelles Bild">
+                <br><small>Aktuelles Bild • Neues Bild hochladen um zu ersetzen</small>
+            `;
+        } else {
+            editImagePreview.innerHTML = `
+                🏛️ Neues Foto hochladen (optional)<br>
+                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            `;
+        }
+        
+        closeVitrineDetailModal();
+        document.getElementById('editVitrineModal').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Fehler beim Öffnen des Bearbeitungsmodals:', error);
+        showError('Vitrine konnte nicht zum Bearbeiten geladen werden.');
+    }
+}
+
+// Bearbeitungsmodal für Vitrine schließen
+function closeEditVitrineModal() {
+    document.getElementById('editVitrineModal').style.display = 'none';
+}
+
+// Bild-Vorschau für Vitrine-Bearbeitung
+function previewEditVitrineImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('editVitrineImagePreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <img src="${e.target.result}" class="preview-image" alt="Neue Vorschau">
+                <br><small>Neues Bild: ${file.name}</small>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Bearbeitete Vitrine speichern
+async function saveEditedVitrine(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('saveVitrineBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Speichere...';
+    
+    try {
+        const id = document.getElementById('editVitrineId').value;
+        const formData = new FormData();
+        
+        formData.append('name', document.getElementById('editVitrineName').value);
+        formData.append('code', document.getElementById('editVitrineCode').value.toUpperCase());
+        formData.append('location', document.getElementById('editVitrineLocation').value);
+        formData.append('description', document.getElementById('editVitrineDescription').value);
+        
+        const imageFile = document.getElementById('editVitrineImage').files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        const response = await fetch(`${API_BASE}/showcases/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Vitrine erfolgreich aktualisiert!');
+            closeEditVitrineModal();
+            await loadShowcases();
+        } else {
+            showError(`Fehler beim Aktualisieren: ${result.error}`);
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Speichern der Änderungen:', error);
+        showError('Netzwerkfehler beim Speichern der Änderungen.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Änderungen speichern';
+    }
+}
+
+// Vitrine löschen
+async function deleteShowcase(id) {
+    if (!confirm('Möchten Sie diese Vitrine wirklich löschen? Alle zugehörigen Regale werden ebenfalls gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/showcases/${id}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Vitrine erfolgreich gelöscht!');
+            closeVitrineDetailModal();
+            await loadShowcases();
+        } else {
+            showError(`Fehler beim Löschen: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Löschen der Vitrine:', error);
+        showError('Netzwerkfehler beim Löschen der Vitrine.');
+    }
+}
+
+// REGAL-MANAGEMENT
+
+// Modal für neues Regal öffnen
+function openAddShelfModal(showcaseId) {
+    currentShowcaseId = showcaseId;
+    document.getElementById('shelfShowcaseId').value = showcaseId;
+    document.getElementById('addShelfModal').style.display = 'flex';
+    document.getElementById('addShelfForm').reset();
+    document.getElementById('shelfImagePreview').innerHTML = `
+        📚 Foto des Regals hochladen (optional)<br>
+        <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+    `;
+}
+
+// Modal für neues Regal schließen
+function closeAddShelfModal() {
+    document.getElementById('addShelfModal').style.display = 'none';
+    currentShowcaseId = null;
+}
+
+// Bild-Vorschau für Regal
+function previewShelfImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('shelfImagePreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <img src="${e.target.result}" class="preview-image" alt="Vorschau">
+                <br><small>${file.name}</small>
+            `;
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.innerHTML = `
+            📚 Foto des Regals hochladen (optional)<br>
+            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+        `;
+    }
+}
+
+// Neues Regal hinzufügen
+async function addShelf(event) {
+    event.preventDefault();
+    
+    const submitBtn = document.getElementById('addShelfBtn');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Wird hinzugefügt...';
+    
+    try {
+        const showcaseId = document.getElementById('shelfShowcaseId').value;
+        const formData = new FormData();
+        
+        formData.append('name', document.getElementById('shelfName').value);
+        formData.append('code', document.getElementById('shelfCode').value.padStart(2, '0'));
+        formData.append('description', document.getElementById('shelfDescription').value);
+        formData.append('position_order', document.getElementById('shelfPosition').value || '0');
+        
+        const imageFile = document.getElementById('shelfImage').files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        const response = await fetch(`${API_BASE}/showcases/${showcaseId}/shelves`, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Regal erfolgreich hinzugefügt!');
+            closeAddShelfModal();
+            // Vitrine-Details neu laden
+            await showShowcaseDetails(showcaseId);
+        } else {
+            showError(`Fehler: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Hinzufügen des Regals:', error);
+        showError('Netzwerkfehler beim Hinzufügen des Regals.');
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Regal hinzufügen';
+    }
+}
+
+// REGAL BEARBEITEN
+
+// Bearbeitungsmodal für Regal öffnen
+async function openEditShelfModal(shelfId) {
+    try {
+        // Regal-Details laden (wir müssen alle Regale durchsuchen oder eine separate API verwenden)
+        const showcaseResponse = await fetch(`${API_BASE}/showcases`);
+        const showcases = await showcaseResponse.json();
+        
+        let shelf = null;
+        let showcaseId = null;
+        
+        for (const showcase of showcases) {
+            const detailResponse = await fetch(`${API_BASE}/showcases/${showcase.id}`);
+            const showcaseDetail = await detailResponse.json();
+            const foundShelf = showcaseDetail.shelves.find(s => s.id === shelfId);
+            if (foundShelf) {
+                shelf = foundShelf;
+                showcaseId = showcase.id;
+                break;
+            }
+        }
+        
+        if (!shelf) {
+            throw new Error('Regal nicht gefunden');
+        }
+        
+        document.getElementById('editShelfId').value = shelf.id;
+        document.getElementById('editShelfName').value = shelf.name;
+        document.getElementById('editShelfCode').value = shelf.code;
+        document.getElementById('editShelfDescription').value = shelf.description || '';
+        document.getElementById('editShelfPosition').value = shelf.position_order || '0';
+        
+        const editImagePreview = document.getElementById('editShelfImagePreview');
+        if (shelf.image_path) {
+            const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+            editImagePreview.innerHTML = `
+                <img src="${imageBase}/${shelf.image_path}" class="preview-image" alt="Aktuelles Bild">
+                <br><small>Aktuelles Bild • Neues Bild hochladen um zu ersetzen</small>
+            `;
+        } else {
+            editImagePreview.innerHTML = `
+                📚 Neues Foto hochladen (optional)<br>
+                <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+            `;
+        }
+        
+        document.getElementById('editShelfModal').style.display = 'flex';
+        
+    } catch (error) {
+        console.error('Fehler beim Öffnen des Regal-Bearbeitungsmodals:', error);
+        showError('Regal konnte nicht zum Bearbeiten geladen werden.');
+    }
+}
+
+// Bearbeitungsmodal für Regal schließen
+function closeEditShelfModal() {
+    document.getElementById('editShelfModal').style.display = 'none';
+}
+
+// Bild-Vorschau für Regal-Bearbeitung
+function previewEditShelfImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('editShelfImagePreview');
+    
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.innerHTML = `
+                <img src="${e.target.result}" class="preview-image" alt="Neue Vorschau">
+                <br><small>Neues Bild: ${file.name}</small>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Bearbeitetes Regal speichern
+async function saveEditedShelf(event) {
+    event.preventDefault();
+    
+    const saveBtn = document.getElementById('saveShelfBtn');
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Speichere...';
+    
+    try {
+        const id = document.getElementById('editShelfId').value;
+        const formData = new FormData();
+        
+        formData.append('name', document.getElementById('editShelfName').value);
+        formData.append('code', document.getElementById('editShelfCode').value.padStart(2, '0'));
+        formData.append('description', document.getElementById('editShelfDescription').value);
+        formData.append('position_order', document.getElementById('editShelfPosition').value || '0');
+        
+        const imageFile = document.getElementById('editShelfImage').files[0];
+        if (imageFile) {
+            formData.append('image', imageFile);
+        }
+        
+        const response = await fetch(`${API_BASE}/shelves/${id}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Regal erfolgreich aktualisiert!');
+            closeEditShelfModal();
+            // Aktuelle Vitrine neu laden
+            if (currentShowcaseId) {
+                await showShowcaseDetails(currentShowcaseId);
+            }
+        } else {
+            showError(`Fehler beim Aktualisieren: ${result.error}`);
+        }
+        
+    } catch (error) {
+        console.error('Fehler beim Speichern der Regal-Änderungen:', error);
+        showError('Netzwerkfehler beim Speichern der Änderungen.');
+    } finally {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Änderungen speichern';
+    }
+}
+
+// Regal löschen
+async function deleteShelf(shelfId) {
+    if (!confirm('Möchten Sie dieses Regal wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch(`${API_BASE}/shelves/${shelfId}`, {
+            method: 'DELETE'
+        });
+        
+        const result = await response.json();
+        
+        if (response.ok) {
+            showSuccess('Regal erfolgreich gelöscht!');
+            // Aktuelle Vitrine neu laden
+            if (currentShowcaseId) {
+                await showShowcaseDetails(currentShowcaseId);
+            }
+        } else {
+            showError(`Fehler beim Löschen: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Fehler beim Löschen des Regals:', error);
+        showError('Netzwerkfehler beim Löschen des Regals.');
+    }
+}
+
+// MINERALIEN IM REGAL ANZEIGEN
+
+// Mineralien eines Regals anzeigen
+async function showShelfMinerals(shelfId) {
+    try {
+        const response = await fetch(`${API_BASE}/shelves/${shelfId}/minerals`);
+        
+        if (!response.ok) {
+            throw new Error(`Regal nicht gefunden`);
+        }
+        
+        const data = await response.json();
+        const modalContent = document.getElementById('shelfMineralsContent');
+        const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+        
+        modalContent.innerHTML = `
+            <div class="shelf-minerals-header">
+                <h2>📚 ${data.shelfInfo ? data.shelfInfo.shelf_name : 'Regal'}</h2>
+                <p style="color: #666; margin-bottom: 10px;">
+                    in ${data.shelfInfo ? data.shelfInfo.showcase_name : 'Unbekannte Vitrine'}
+                </p>
+                <p style="color: #888; font-size: 14px;">
+                    ${data.minerals.length} Mineralien in diesem Regal
+                </p>
+            </div>
+            
+            ${data.minerals.length === 0 
+                ? '<div class="no-minerals">Dieses Regal ist noch leer. Fügen Sie Mineralien über das Admin-Panel hinzu und ordnen Sie sie diesem Regal zu.</div>'
+                : `<div class="shelf-minerals-grid">${data.minerals.map(mineral => `
+                    <div class="shelf-mineral-card" onclick="showMineralDetails(${mineral.id})">
+                        <div class="shelf-mineral-image">
+                            ${mineral.image_path 
+                                ? `<img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">`
+                                : `<div class="placeholder">🔸</div>`
+                            }
+                            ${mineral.image_path ? `<div class="placeholder" style="display:none;">🔸</div>` : ''}
+                        </div>
+                        <div class="shelf-mineral-info">
+                            <h4>${mineral.name}</h4>
+                            <p><strong>Nr:</strong> ${mineral.number}</p>
+                            <p><strong>Farbe:</strong> ${mineral.color || 'Nicht angegeben'}</p>
+                            <p><strong>Fundort:</strong> ${mineral.location || 'Unbekannt'}</p>
+                        </div>
+                    </div>
+                `).join('')}</div>`
+            }
+        `;
+
+        document.getElementById('shelfMineralsModal').style.display = 'flex';
+        currentShelfId = shelfId;
+    } catch (error) {
+        console.error('Fehler beim Laden der Regal-Mineralien:', error);
+        showError('Mineralien konnten nicht geladen werden.');
+    }
+}
+
+// Regal-Mineralien-Modal schließen
+function closeShelfMineralsModal() {
+    document.getElementById('shelfMineralsModal').style.display = 'none';
+    currentShelfId = null;
+}
+
+// Modal-Event-Listener erweitern
+const originalWindowClick = window.onclick;
+window.onclick = function(event) {
+    if (originalWindowClick) {
+        originalWindowClick(event);
+    }
+    
+    const addVitrineModal = document.getElementById('addVitrineModal');
+    const editVitrineModal = document.getElementById('editVitrineModal');
+    const vitrineDetailModal = document.getElementById('vitrineDetailModal');
+    const addShelfModal = document.getElementById('addShelfModal');
+    const editShelfModal = document.getElementById('editShelfModal');
+    const shelfMineralsModal = document.getElementById('shelfMineralsModal');
+    
+    if (event.target === addVitrineModal) closeAddVitrineModal();
+    if (event.target === editVitrineModal) closeEditVitrineModal();
+    if (event.target === vitrineDetailModal) closeVitrineDetailModal();
+    if (event.target === addShelfModal) closeAddShelfModal();
+    if (event.target === editShelfModal) closeEditShelfModal();
+    if (event.target === shelfMineralsModal) closeShelfMineralsModal();
+}
+
+// Keyboard-Navigation erweitern
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closeAddVitrineModal();
+        closeEditVitrineModal();
+        closeVitrineDetailModal();
+        closeAddShelfModal();
+        closeEditShelfModal();
+        closeShelfMineralsModal();
     }
 });

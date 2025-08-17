@@ -14,6 +14,7 @@
             <nav>
                 <button onclick="showPage('home')" class="nav-btn active" id="home-btn">Startseite</button>
                 <button onclick="showPage('collection')" class="nav-btn" id="collection-btn">Sammlung</button>
+                <button onclick="showPage('vitrines')" class="nav-btn" id="vitrines-btn">Vitrinen</button>
                 <button onclick="showPage('admin')" class="nav-btn" id="admin-btn">Admin-Panel</button>
             </nav>
         </header>
@@ -125,6 +126,18 @@
                 <button type="submit" id="submitBtn">Mineral hinzufügen</button>
             </form>
         </div>
+
+        <!-- Neue Vitrinen-Seite (nach der admin-Seite einfügen): -->
+        <div id="vitrines" class="page">
+            <div class="vitrines-header">
+                <h2>🏛️ Vitrinen-Verwaltung</h2>
+                <button onclick="openAddVitrineModal()" class="btn-add">Neue Vitrine hinzufügen</button>
+            </div>
+
+            <div id="vitrinesGrid" class="vitrines-grid">
+                <div class="loading">Lade Vitrinen...</div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal für Mineral-Details -->
@@ -173,6 +186,145 @@
                     <button type="button" class="btn-cancel" onclick="closeEditModal()">Abbrechen</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Modal für neue Vitrine hinzufügen (nach editModal einfügen): -->
+    <div id="addVitrineModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeAddVitrineModal()">&times;</span>
+            <h2>Neue Vitrine hinzufügen</h2>
+            <form class="vitrine-form" id="addVitrineForm" onsubmit="addVitrine(event)">
+                <input type="text" id="vitrineName" placeholder="Name der Vitrine" required>
+                <input type="text" id="vitrineCode" placeholder="Vitrine-Code (z.B. V01)" pattern="V\d+" required>
+                <input type="text" id="vitrineLocation" placeholder="Standort der Vitrine" required>
+                <textarea id="vitrineDescription" placeholder="Beschreibung" required></textarea>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="vitrineImage" accept="image/*" onchange="previewVitrineImage(event)">
+                    <div class="file-input-display">
+                        <div id="vitrineImagePreview">
+                            🏛️ Foto der Vitrine hochladen (optional)<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-save" id="addVitrineBtn">Vitrine hinzufügen</button>
+                    <button type="button" class="btn-cancel" onclick="closeAddVitrineModal()">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Vitrine bearbeiten: -->
+    <div id="editVitrineModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeEditVitrineModal()">&times;</span>
+            <h2>Vitrine bearbeiten</h2>
+            <form class="vitrine-form" id="editVitrineForm" onsubmit="saveEditedVitrine(event)">
+                <input type="hidden" id="editVitrineId">
+                <input type="text" id="editVitrineName" placeholder="Name der Vitrine" required>
+                <input type="text" id="editVitrineCode" placeholder="Vitrine-Code (z.B. V01)" pattern="V\d+" required>
+                <input type="text" id="editVitrineLocation" placeholder="Standort der Vitrine" required>
+                <textarea id="editVitrineDescription" placeholder="Beschreibung" required></textarea>
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="editVitrineImage" accept="image/*" onchange="previewEditVitrineImage(event)">
+                    <div class="file-input-display">
+                        <div id="editVitrineImagePreview">
+                            🏛️ Neues Foto hochladen (optional)<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-save" id="saveVitrineBtn">Änderungen speichern</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditVitrineModal()">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Vitrine-Details mit Regalen: -->
+    <div id="vitrineDetailModal" class="modal">
+        <div class="modal-content large">
+            <span class="close-button" onclick="closeVitrineDetailModal()">&times;</span>
+            <div id="vitrineDetailContent">
+                <!-- Details werden hier eingefügt -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal für neues Regal hinzufügen: -->
+    <div id="addShelfModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeAddShelfModal()">&times;</span>
+            <h2>Neues Regal hinzufügen</h2>
+            <form class="shelf-form" id="addShelfForm" onsubmit="addShelf(event)">
+                <input type="hidden" id="shelfShowcaseId">
+                <input type="text" id="shelfName" placeholder="Name des Regals" required>
+                <input type="text" id="shelfCode" placeholder="Regal-Code (z.B. 01)" pattern="\d+" required>
+                <textarea id="shelfDescription" placeholder="Beschreibung" required></textarea>
+                <input type="number" id="shelfPosition" placeholder="Position (optional)" min="0" value="0">
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="shelfImage" accept="image/*" onchange="previewShelfImage(event)">
+                    <div class="file-input-display">
+                        <div id="shelfImagePreview">
+                            📚 Foto des Regals hochladen (optional)<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-save" id="addShelfBtn">Regal hinzufügen</button>
+                    <button type="button" class="btn-cancel" onclick="closeAddShelfModal()">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Regal bearbeiten: -->
+    <div id="editShelfModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeEditShelfModal()">&times;</span>
+            <h2>Regal bearbeiten</h2>
+            <form class="shelf-form" id="editShelfForm" onsubmit="saveEditedShelf(event)">
+                <input type="hidden" id="editShelfId">
+                <input type="text" id="editShelfName" placeholder="Name des Regals" required>
+                <input type="text" id="editShelfCode" placeholder="Regal-Code (z.B. 01)" pattern="\d+" required>
+                <textarea id="editShelfDescription" placeholder="Beschreibung" required></textarea>
+                <input type="number" id="editShelfPosition" placeholder="Position" min="0" value="0">
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="editShelfImage" accept="image/*" onchange="previewEditShelfImage(event)">
+                    <div class="file-input-display">
+                        <div id="editShelfImagePreview">
+                            📚 Neues Foto hochladen (optional)<br>
+                            <small>(JPEG, PNG, GIF, WebP - Max. 10MB)</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="button-group">
+                    <button type="submit" class="btn-save" id="saveShelfBtn">Änderungen speichern</button>
+                    <button type="button" class="btn-cancel" onclick="closeEditShelfModal()">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal für Regal-Mineralien anzeigen: -->
+    <div id="shelfMineralsModal" class="modal">
+        <div class="modal-content large">
+            <span class="close-button" onclick="closeShelfMineralsModal()">&times;</span>
+            <div id="shelfMineralsContent">
+                <!-- Mineralien werden hier eingefügt -->
+            </div>
         </div>
     </div>
 
