@@ -25,6 +25,60 @@ if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
+// MULTER KONFIGURATION - MUSS VOR DEN API-ROUTEN STEHEN!
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, uploadsDir);
+    },
+    filename: function (req, file, cb) {
+        // Eindeutiger Dateiname mit Zeitstempel
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const extension = path.extname(file.originalname).toLowerCase();
+        cb(null, 'mineral-' + uniqueSuffix + extension);
+    }
+});
+
+// Datei-Filter für Bilder
+const fileFilter = (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+        cb(null, true);
+    } else {
+        cb(new Error('Nur Bilddateien sind erlaubt (JPEG, PNG, GIF, WebP)'), false);
+    }
+};
+
+const upload = multer({ 
+    storage: storage,
+    fileFilter: fileFilter,
+    limits: {
+        fileSize: 10 * 1024 * 1024 // 10MB Limit
+    }
+});
+
+// Bild verarbeiten und optimieren
+async function processImage(imagePath) {
+    try {
+        const outputPath = imagePath.replace(path.extname(imagePath), '_optimized' + path.extname(imagePath));
+        
+        await sharp(imagePath)
+            .resize(800, 600, { 
+                fit: 'inside',
+                withoutEnlargement: true 
+            })
+            .jpeg({ quality: 85 })
+            .toFile(outputPath);
+        
+        // Originaldatei löschen und optimierte umbenennen
+        fs.unlinkSync(imagePath);
+        fs.renameSync(outputPath, imagePath);
+        
+        console.log(`✅ Bild optimiert: ${imagePath}`);
+    } catch (error) {
+        console.error('Fehler beim Verarbeiten des Bildes:', error);
+    }
+}
+
 // SQLite Datenbank initialisieren
 const db = new sqlite3.Database('./minerals.db', (err) => {
     if (err) {
@@ -66,7 +120,7 @@ function initDatabase() {
 
 // Erweiterte Datenbank-Schema-Erstellung
 function initVitrineSystem() {
-    console.log('🏛️ Initialisiere Vitrinensystem...');
+    console.log('🛏️ Initialisiere Vitrinensystem...');
     
     // Vitrinen-Tabelle
     const createShowcasesTable = `
@@ -148,7 +202,7 @@ function autoCreateShowcasesAndShelves() {
             }
         });
         
-        console.log(`🏛️ Gefunden: ${showcasesSet.size} Vitrinen, ${shelvesData.length} Regale`);
+        console.log(`🛏️ Gefunden: ${showcasesSet.size} Vitrinen, ${shelvesData.length} Regale`);
         
         // Vitrinen erstellen
         const showcasePromises = Array.from(showcasesSet).map(showcaseCode => {
@@ -202,6 +256,39 @@ function autoCreateShowcasesAndShelves() {
                 });
             });
         });
+    });
+}
+
+// Beispieldaten einfügen (nur beim ersten Start)
+function insertSampleData() {
+    db.get("SELECT COUNT(*) as count FROM minerals", (err, row) => {
+        if (err) {
+            console.error('Fehler beim Prüfen der Daten:', err);
+            return;
+        }
+        
+        if (row.count === 0) {
+            console.log('📝 Füge Beispieldaten ein...');
+            const sampleMinerals = [
+                ['Amethyst', 'MIN-001', 'violett', 'Ein wunderschöner violetter Quarz-Kristall mit ausgezeichneter Klarheit und Farbsättigung.', 'brasilien', 'Mineralienbörse München', 'magmatisch', 'R1-A3'],
+                ['Pyrit', 'MIN-002', 'gelb', 'Auch als "Katzengold" bekannt, zeigt dieser Pyrit perfekte Würfelkristalle.', 'deutschland', 'Online-Shop', 'sedimentär', 'R2-B1'],
+                ['Malachit', 'MIN-003', 'grün', 'Ein kupferhaltiges Karbonat-Mineral mit charakteristischen grünen Bändern.', 'österreich', 'Lokaler Sammler', 'sedimentär', 'R1-C2'],
+                ['Rosenquarz', 'MIN-004', 'rot', 'Ein zart rosa gefärbter Quarz, der als Stein der Liebe bekannt ist.', 'brasilien', 'Mineralienmesse', 'magmatisch', 'R3-A1'],
+                ['Bergkristall', 'MIN-005', 'weiß', 'Ein klarer, durchsichtiger Quarz von außergewöhnlicher Reinheit.', 'schweiz', 'Alpensammlung', 'metamorph', 'R2-C3']
+            ];
+            
+            const insertQuery = `INSERT INTO minerals (name, number, color, description, location, purchase_location, rock_type, shelf) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+            
+            sampleMinerals.forEach(mineral => {
+                db.run(insertQuery, mineral, (err) => {
+                    if (err) {
+                        console.error('Fehler beim Einfügen der Beispieldaten:', err);
+                    }
+                });
+            });
+            
+            console.log('✅ Beispieldaten eingefügt.');
+        }
     });
 }
 
@@ -602,97 +689,7 @@ app.get('/api/shelves/:id/minerals', (req, res) => {
     });
 });
 
-// In der initDatabase() Funktion nach dem insertSampleData() Aufruf hinzufügen:
-// initVitrineSystem();
-
-// Beispieldaten einfügen (nur beim ersten Start)
-function insertSampleData() {
-    db.get("SELECT COUNT(*) as count FROM minerals", (err, row) => {
-        if (err) {
-            console.error('Fehler beim Prüfen der Daten:', err);
-            return;
-        }
-        
-        if (row.count === 0) {
-            console.log('📝 Füge Beispieldaten ein...');
-            const sampleMinerals = [
-                ['Amethyst', 'MIN-001', 'violett', 'Ein wunderschöner violetter Quarz-Kristall mit ausgezeichneter Klarheit und Farbsättigung.', 'brasilien', 'Mineralienbörse München', 'magmatisch', 'R1-A3'],
-                ['Pyrit', 'MIN-002', 'gelb', 'Auch als "Katzengold" bekannt, zeigt dieser Pyrit perfekte Würfelkristalle.', 'deutschland', 'Online-Shop', 'sedimentär', 'R2-B1'],
-                ['Malachit', 'MIN-003', 'grün', 'Ein kupferhaltiges Karbonat-Mineral mit charakteristischen grünen Bändern.', 'österreich', 'Lokaler Sammler', 'sedimentär', 'R1-C2'],
-                ['Rosenquarz', 'MIN-004', 'rot', 'Ein zart rosa gefärbter Quarz, der als Stein der Liebe bekannt ist.', 'brasilien', 'Mineralienmesse', 'magmatisch', 'R3-A1'],
-                ['Bergkristall', 'MIN-005', 'weiß', 'Ein klarer, durchsichtiger Quarz von außergewöhnlicher Reinheit.', 'schweiz', 'Alpensammlung', 'metamorph', 'R2-C3']
-            ];
-            
-            const insertQuery = `INSERT INTO minerals (name, number, color, description, location, purchase_location, rock_type, shelf) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-            
-            sampleMinerals.forEach(mineral => {
-                db.run(insertQuery, mineral, (err) => {
-                    if (err) {
-                        console.error('Fehler beim Einfügen der Beispieldaten:', err);
-                    }
-                });
-            });
-            
-            console.log('✅ Beispieldaten eingefügt.');
-        }
-    });
-}
-
-// Multer für Datei-Uploads konfigurieren
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, uploadsDir);
-    },
-    filename: function (req, file, cb) {
-        // Eindeutiger Dateiname mit Zeitstempel
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        const extension = path.extname(file.originalname).toLowerCase();
-        cb(null, 'mineral-' + uniqueSuffix + extension);
-    }
-});
-
-// Datei-Filter für Bilder
-const fileFilter = (req, file, cb) => {
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-    if (allowedTypes.includes(file.mimetype)) {
-        cb(null, true);
-    } else {
-        cb(new Error('Nur Bilddateien sind erlaubt (JPEG, PNG, GIF, WebP)'), false);
-    }
-};
-
-const upload = multer({ 
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB Limit
-    }
-});
-
-// Bild verarbeiten und optimieren
-async function processImage(imagePath) {
-    try {
-        const outputPath = imagePath.replace(path.extname(imagePath), '_optimized' + path.extname(imagePath));
-        
-        await sharp(imagePath)
-            .resize(800, 600, { 
-                fit: 'inside',
-                withoutEnlargement: true 
-            })
-            .jpeg({ quality: 85 })
-            .toFile(outputPath);
-        
-        // Originaldatei löschen und optimierte umbenennen
-        fs.unlinkSync(imagePath);
-        fs.renameSync(outputPath, imagePath);
-        
-        console.log(`✅ Bild optimiert: ${imagePath}`);
-    } catch (error) {
-        console.error('Fehler beim Verarbeiten des Bildes:', error);
-    }
-}
-
-// API ROUTES
+// API ROUTES FÜR MINERALIEN
 
 // WICHTIG: Filter-Route muss VOR der allgemeinen Mineralien-Route stehen!
 // Eindeutige Werte für Filter abrufen
@@ -1040,9 +1037,9 @@ app.listen(PORT, '0.0.0.0', () => {
 🌟 ================================
 🚀 Server läuft auf: http://localhost:${PORT}
 🌐 Netzwerk-Zugriff: http://192.168.178.50:${PORT}
-📁 Bilder-Ordner: ${uploadsDir}
+📂 Bilder-Ordner: ${uploadsDir}
 💾 Datenbank: ./minerals.db
-🕐 Gestartet: ${new Date().toLocaleString('de-DE')}
+🕒 Gestartet: ${new Date().toLocaleString('de-DE')}
 🌟 ================================
     `);
 });
