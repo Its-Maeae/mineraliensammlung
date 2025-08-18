@@ -1217,3 +1217,65 @@ nav button.active {
         visibility: visible;
     }
 }
+
+/* Gesteinsarten Autocomplete Styling */
+.rock-type-container {
+    position: relative;
+}
+
+.rock-type-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.rock-type-input:focus {
+    outline: none;
+    border-color: #4ecdc4;
+    box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.1);
+}
+
+.rock-type-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 2px solid #e2e8f0;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.rock-type-suggestion {
+    padding: 10px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background-color 0.2s ease;
+}
+
+.rock-type-suggestion:hover,
+.rock-type-suggestion.highlighted {
+    background-color: #f1f5f9;
+}
+
+.rock-type-suggestion:last-child {
+    border-bottom: none;
+}
+
+.suggestion-category {
+    font-weight: 600;
+    color: #4a5568;
+    background-color: #f7fafc;
+    padding: 8px 12px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
