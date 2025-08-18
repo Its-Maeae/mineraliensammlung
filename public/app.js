@@ -400,13 +400,13 @@ async function showMineralDetails(id) {
     }
 }
 
-// Funktion um zurück zum Regal zu gehen
-function backToShelfMinerals() {
-    if (currentShelfId) {
-        closeModal(); // Mineral-Details schließen
-        showShelfMinerals(currentShelfId); // Regal wieder öffnen
-    }
-}
+// // Funktion um zurück zum Regal zu gehen
+// function backToShelfMinerals() {
+//     if (currentShelfId) {
+//         closeModal(); // Mineral-Details schließen
+//         showShelfMinerals(currentShelfId); // Regal wieder öffnen
+//     }
+// }
 
 // Bearbeitungsmodal öffnen
 async function openEditModal(id) {
