@@ -315,7 +315,7 @@ MIT License - Frei wie ein Vogel, stark wie ein Diamant 💎
 
 [![Star](https://img.shields.io/badge/⭐_Star-this_repo-yellow?style=for-the-badge)](https://github.com/IhrUsername/mineraliensammlung)
 [![Fork](https://img.shields.io/badge/🍴_Fork-this_repo-blue?style=for-the-badge)](https://github.com/IhrUsername/mineraliensammlung/fork)
-[![Follow](https://img.shields.io/badge/👤_Follow-@IhrUsername-purple?style=for-the-badge)](https://github.com/Its_Maeae)
+[![Follow](https://img.shields.io/badge/👤_Follow-@Its-Maeae-purple?style=for-the-badge)](https://github.com/Its-Maeae)
 
 **Erstellt mit 💎 für Mineralien-Liebhaber**
 
