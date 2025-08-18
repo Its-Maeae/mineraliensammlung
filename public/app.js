@@ -319,12 +319,10 @@ function displayMinerals() {
     `).join('');
 }
 
-// Mineral-Details anzeigen - VERBESSERTE VERSION
+// Mineral-Details anzeigen - VOLLSTÄNDIG KORRIGIERTE VERSION
 async function showMineralDetails(id) {
     try {
-        // // Erst alle anderen Modals schließen
-        // closeShelfMineralsModal();
-        // closeVitrineDetailModal();
+        // Diese Modals bleiben jetzt offen wenn man aus einem Regal kommt!
         
         const response = await fetch(`${API_BASE}/minerals/${id}`);
         
