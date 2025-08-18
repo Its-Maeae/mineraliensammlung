@@ -45,10 +45,6 @@
                     <h3>📋 Detaillierte Informationen</h3>
                     <p>Erhalten Sie umfassende Informationen zu jedem Mineral in der Sammlung.</p>
                 </div>
-                <!-- <div class="feature">
-                    <h3>⚡ Raspberry Pi Integration</h3>
-                    <p>Optimiert für den Betrieb auf Ihrem Raspberry Pi mit lokaler Datenbank.</p>
-                </div> -->
             </div>
         </div>
 
@@ -96,7 +92,6 @@
 
         <div id="admin" class="page">
             <h2>Admin-Panel</h2>
-            <!-- <p>Hier können Sie neue Mineralien zu Ihrer Sammlung hinzufügen:</p> -->
             
             <form class="admin-form" onsubmit="addMineral(event)">
                 <input type="text" id="mineralName" placeholder="Name des Minerals" required>
@@ -132,10 +127,10 @@
             </form>
         </div>
 
-        <!-- Neue Vitrinen-Seite (nach der admin-Seite einfügen): -->
+        <!-- Neue Vitrinen-Seite -->
         <div id="vitrines" class="page">
             <div class="vitrines-header">
-                <h2>🏛️ Vitrinen-Verwaltung</h2>
+                <h2>🛏️ Vitrinen-Verwaltung</h2>
                 <button onclick="openAddVitrineModal()" class="btn-add">Neue Vitrine hinzufügen</button>
             </div>
 
@@ -155,7 +150,7 @@
         </div>
     </div>
 
-    <!-- Modal für Mineral bearbeiten -->
+    <!-- Modal für Mineral bearbeiten - KORRIGIERT -->
     <div id="editModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeEditModal()">&times;</span>
@@ -171,13 +166,13 @@
                 <div class="rock-type-container">
                     <input 
                         type="text" 
-                        id="mineralRockType" 
+                        id="editMineralRockType" 
                         class="rock-type-input"
                         placeholder="Gesteinsart eingeben (z.B. magmatisch, sedimentär, metamorph)" 
                         autocomplete="off"
                         required
                     >
-                    <div id="rockTypeSuggestions" class="rock-type-suggestions"></div>
+                    <div id="editRockTypeSuggestions" class="rock-type-suggestions"></div>
                 </div>
                 <input type="text" id="editMineralShelf" placeholder="Regal-Nummer" required>
                 
@@ -199,7 +194,7 @@
         </div>
     </div>
 
-    <!-- Modal für neue Vitrine hinzufügen (nach editModal einfügen): -->
+    <!-- Modal für neue Vitrine hinzufügen -->
     <div id="addVitrineModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeAddVitrineModal()">&times;</span>
@@ -214,7 +209,7 @@
                     <input type="file" id="vitrineImage" accept="image/*" onchange="previewVitrineImage(event)">
                     <div class="file-input-display">
                         <div id="vitrineImagePreview">
-                            🏛️ Foto der Vitrine hochladen (optional)<br>
+                            🛏️ Foto der Vitrine hochladen (optional)<br>
                             <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
                         </div>
                     </div>
@@ -228,7 +223,7 @@
         </div>
     </div>
 
-    <!-- Modal für Vitrine bearbeiten: -->
+    <!-- Modal für Vitrine bearbeiten -->
     <div id="editVitrineModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeEditVitrineModal()">&times;</span>
@@ -244,7 +239,7 @@
                     <input type="file" id="editVitrineImage" accept="image/*" onchange="previewEditVitrineImage(event)">
                     <div class="file-input-display">
                         <div id="editVitrineImagePreview">
-                            🏛️ Neues Foto hochladen (optional)<br>
+                            🛏️ Neues Foto hochladen (optional)<br>
                             <small>(JPEG, PNG, GIF, WebP - Max. 40MB)</small>
                         </div>
                     </div>
@@ -258,7 +253,7 @@
         </div>
     </div>
 
-    <!-- Modal für Vitrine-Details mit Regalen: -->
+    <!-- Modal für Vitrine-Details mit Regalen -->
     <div id="vitrineDetailModal" class="modal">
         <div class="modal-content large">
             <span class="close-button" onclick="closeVitrineDetailModal()">&times;</span>
@@ -268,7 +263,7 @@
         </div>
     </div>
 
-    <!-- Modal für neues Regal hinzufügen: -->
+    <!-- Modal für neues Regal hinzufügen -->
     <div id="addShelfModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeAddShelfModal()">&times;</span>
@@ -298,7 +293,7 @@
         </div>
     </div>
 
-    <!-- Modal für Regal bearbeiten: -->
+    <!-- Modal für Regal bearbeiten -->
     <div id="editShelfModal" class="modal">
         <div class="modal-content">
             <span class="close-button" onclick="closeEditShelfModal()">&times;</span>
@@ -328,7 +323,7 @@
         </div>
     </div>
 
-    <!-- Modal für Regal-Mineralien anzeigen: -->
+    <!-- Modal für Regal-Mineralien anzeigen -->
     <div id="shelfMineralsModal" class="modal">
         <div class="modal-content large">
             <span class="close-button" onclick="closeShelfMineralsModal()">&times;</span>
