@@ -319,10 +319,12 @@ function displayMinerals() {
     `).join('');
 }
 
-// Mineral-Details anzeigen - VOLLSTÄNDIG KORRIGIERTE VERSION
+// Mineral-Details anzeigen - VERBESSERTE VERSION
 async function showMineralDetails(id) {
     try {
-        // Diese Modals bleiben jetzt offen wenn man aus einem Regal kommt!
+        // // Erst alle anderen Modals schließen
+        // closeShelfMineralsModal();
+        // closeVitrineDetailModal();
         
         const response = await fetch(`${API_BASE}/minerals/${id}`);
         
@@ -1457,12 +1459,13 @@ function handleZoomEscape(event) {
     }
 }
 
-// Modal-Event-Listener erweitern - VERBESSERTE VERSION
+// Modal-Event-Listener erweitern
 const originalWindowClick = window.onclick;
 window.onclick = function(event) {
-    // Alle bestehenden Modal-Checks
-    const mineralModal = document.getElementById('mineralModal');
-    const editModal = document.getElementById('editModal');
+    if (originalWindowClick) {
+        originalWindowClick(event);
+    }
+    
     const addVitrineModal = document.getElementById('addVitrineModal');
     const editVitrineModal = document.getElementById('editVitrineModal');
     const vitrineDetailModal = document.getElementById('vitrineDetailModal');
@@ -1471,8 +1474,6 @@ window.onclick = function(event) {
     const shelfMineralsModal = document.getElementById('shelfMineralsModal');
     const imageZoomModal = document.getElementById('imageZoomModal');
     
-    if (event.target === mineralModal) closeModal();
-    if (event.target === editModal) closeEditModal();
     if (event.target === addVitrineModal) closeAddVitrineModal();
     if (event.target === editVitrineModal) closeEditVitrineModal();
     if (event.target === vitrineDetailModal) closeVitrineDetailModal();
@@ -1482,42 +1483,31 @@ window.onclick = function(event) {
     if (event.target === imageZoomModal) closeImageZoom();
 }
 
-// Funktion um zu prüfen ob ein Modal offen ist
-function hasOpenModal() {
-    const modals = [
-        'mineralModal', 'editModal', 'addVitrineModal', 'editVitrineModal',
-        'vitrineDetailModal', 'addShelfModal', 'editShelfModal', 
-        'shelfMineralsModal', 'imageZoomModal'
-    ];
+// // Funktion um zu prüfen ob ein Modal offen ist
+// function hasOpenModal() {
+//     const modals = [
+//         'mineralModal', 'editModal', 'addVitrineModal', 'editVitrineModal',
+//         'vitrineDetailModal', 'addShelfModal', 'editShelfModal', 
+//         'shelfMineralsModal', 'imageZoomModal'
+//     ];
     
-    return modals.some(modalId => {
-        const modal = document.getElementById(modalId);
-        return modal && modal.style.display === 'flex';
-    });
-}
+//     return modals.some(modalId => {
+//         const modal = document.getElementById(modalId);
+//         return modal && modal.style.display === 'flex';
+//     });
+// }
 
-// Erweiterte Keyboard-Navigation - VERBESSERTE VERSION
+// Erweiterte Keyboard-Navigation
 document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
-        // Bei Escape nur das oberste Modal schließen
-        const modals = [
-            { element: document.getElementById('imageZoomModal'), close: closeImageZoom },
-            { element: document.getElementById('mineralModal'), close: closeModal },
-            { element: document.getElementById('editModal'), close: closeEditModal },
-            { element: document.getElementById('shelfMineralsModal'), close: closeShelfMineralsModal },
-            { element: document.getElementById('vitrineDetailModal'), close: closeVitrineDetailModal },
-            { element: document.getElementById('editShelfModal'), close: closeEditShelfModal },
-            { element: document.getElementById('addShelfModal'), close: closeAddShelfModal },
-            { element: document.getElementById('editVitrineModal'), close: closeEditVitrineModal },
-            { element: document.getElementById('addVitrineModal'), close: closeAddVitrineModal }
-        ];
-        
-        // Finde das oberste sichtbare Modal und schließe es
-        for (const modal of modals) {
-            if (modal.element && modal.element.style.display === 'flex') {
-                modal.close();
-                break; // Nur das erste (oberste) Modal schließen
-            }
-        }
+        closeAddVitrineModal();
+        closeEditVitrineModal();
+        closeVitrineDetailModal();
+        closeAddShelfModal();
+        closeEditShelfModal();
+        closeShelfMineralsModal();
+        closeImageZoom();
+        closeModal();
+        closeEditModal();
     }
 });
