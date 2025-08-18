@@ -15,11 +15,14 @@ let currentFilters = {
 // API Base URL - dynamisch ermittelt
 const API_BASE = window.location.protocol + '//' + window.location.hostname + ':8084/api';
 
-// Initialisierung beim Laden der Seite
+// Erweiterte DOMContentLoaded Funktion
 document.addEventListener('DOMContentLoaded', function() {
     loadStats();
     loadFilterOptions();
+    setupRockTypeAutocomplete('mineralRockType', 'rockTypeSuggestions');
+    setupRockTypeAutocomplete('editMineralRockType', 'editRockTypeSuggestions');
 });
+
 
 // Fehler anzeigen
 function showError(message) {
@@ -73,41 +76,49 @@ async function loadStats() {
     }
 }
 
-// Filter-Optionen laden
+// Filter-Optionen laden - ERWEITERTE VERSION
 async function loadFilterOptions() {
-    try {
-        const response = await fetch(`${API_BASE}/minerals/filters`);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        const filterData = await response.json();
-        
-        // Farben-Filter füllen
-        const colorSelect = document.getElementById('colorFilter');
-        colorSelect.innerHTML = '<option value="">Alle Farben</option>';
-        filterData.colors.forEach(color => {
-            colorSelect.innerHTML += `<option value="${color}">${color}</option>`;
-        });
-        
-        // Fundorte-Filter füllen
-        const locationSelect = document.getElementById('locationFilter');
-        locationSelect.innerHTML = '<option value="">Alle Fundorte</option>';
-        filterData.locations.forEach(location => {
-            locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
-        });
-        
-        // Gesteinsarten-Filter füllen
-        const rockTypeSelect = document.getElementById('rockTypeFilter');
-        rockTypeSelect.innerHTML = '<option value="">Alle Gesteinsarten</option>';
-        filterData.rock_types.forEach(type => {
-            rockTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
-        });
-        
-        filters = filterData;
-    } catch (error) {
-        console.error('Fehler beim Laden der Filter:', error);
-        showError('Filter konnten nicht geladen werden.');
-    }
+   try {
+       const response = await fetch(`${API_BASE}/minerals/filters`);
+       if (!response.ok) {
+           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+       }
+       const filterData = await response.json();
+       
+       // Farben-Filter füllen
+       const colorSelect = document.getElementById('colorFilter');
+       colorSelect.innerHTML = '<option value="">Alle Farben</option>';
+       filterData.colors.forEach(color => {
+           colorSelect.innerHTML += `<option value="${color}">${color}</option>`;
+       });
+       
+       // Fundorte-Filter füllen
+       const locationSelect = document.getElementById('locationFilter');
+       locationSelect.innerHTML = '<option value="">Alle Fundorte</option>';
+       filterData.locations.forEach(location => {
+           locationSelect.innerHTML += `<option value="${location}">${location}</option>`;
+       });
+       
+       // Gesteinsarten-Filter füllen - HIER IST DIE WICHTIGE ÄNDERUNG
+       const rockTypeSelect = document.getElementById('rockTypeFilter');
+       rockTypeSelect.innerHTML = '<option value="">Alle Gesteinsarten</option>';
+       
+       // Sortiere Gesteinsarten alphabetisch
+       const sortedRockTypes = [...filterData.rock_types].sort();
+       sortedRockTypes.forEach(type => {
+           rockTypeSelect.innerHTML += `<option value="${type}">${type}</option>`;
+       });
+       
+       // Sammle alle verwendeten Gesteinsarten für Autocomplete
+       filterData.rock_types.forEach(type => {
+           allRockTypes.add(type);
+       });
+       
+       filters = filterData;
+   } catch (error) {
+       console.error('Fehler beim Laden der Filter:', error);
+       showError('Filter konnten nicht geladen werden.');
+   }
 }
 
 // Seiten wechseln
@@ -319,85 +330,85 @@ function displayMinerals() {
     `).join('');
 }
 
-// Mineral-Details anzeigen - VERBESSERTE VERSION
+// Mineral-Details anzeigen - Erweiterte Version für Edit-Modal
 async function showMineralDetails(id) {
-    try {
-        // Erst alle anderen Modals schließen
-        closeShelfMineralsModal();
-        closeVitrineDetailModal();
-        
-        const response = await fetch(`${API_BASE}/minerals/${id}`);
-        
-        if (!response.ok) {
-            throw new Error(`Mineral nicht gefunden`);
-        }
-        
-        const mineral = await response.json();
-        const modalContent = document.getElementById('modalContent');
-        
-        // Basis-URL für Bilder
-        const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
-        
-        modalContent.innerHTML = `
-            <h2>${mineral.name}</h2>
-            
-            ${mineral.image_path 
-                ? `<div class="detail-image">
-                     <img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'">
-                     <button class="zoom-btn detail-zoom-btn" onclick="openImageZoom('${imageBase}/${mineral.image_path}', '${mineral.name}')" title="Bild vergrößern">🔍</button>
-                   </div>`
-                : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">📸</div>'
-            }
-            
-            <div class="detail-info">
-                <div class="detail-item">
-                    <span class="detail-label">Steinnummer:</span>
-                    <span class="detail-value">${mineral.number}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Farbe:</span>
-                    <span class="detail-value">${mineral.color || 'Nicht angegeben'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Fundort:</span>
-                    <span class="detail-value">${mineral.location || 'Unbekannt'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Kaufort:</span>
-                    <span class="detail-value">${mineral.purchase_location || 'Nicht angegeben'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Gesteinsart:</span>
-                    <span class="detail-value">${mineral.rock_type || 'Nicht angegeben'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Regal:</span>
-                    <span class="detail-value">${mineral.shelf || 'Nicht angegeben'}</span>
-                </div>
-                <div class="detail-item">
-                    <span class="detail-label">Hinzugefügt:</span>
-                    <span class="detail-value">${new Date(mineral.created_at).toLocaleDateString('de-DE')}</span>
-                </div>
-            </div>
-            
-            <div style="margin-top: 20px;">
-                <h3>Beschreibung</h3>
-                <p style="margin-top: 10px; color: #555; line-height: 1.6;">${mineral.description || 'Keine Beschreibung verfügbar.'}</p>
-            </div>
-            
-            <div style="margin-top: 20px; text-align: center;">
-                <button onclick="openEditModal(${mineral.id})" class="btn-edit">Bearbeiten</button>
-                <button onclick="deleteMineral(${mineral.id})" class="btn-delete">Löschen</button>
-                ${currentShelfId ? `<button onclick="backToShelfMinerals()" class="btn-back">Zurück zum Regal</button>` : ''}
-            </div>
-        `;
+   try {
+       // Erst alle anderen Modals schließen
+       closeShelfMineralsModal();
+       closeVitrineDetailModal();
+       
+       const response = await fetch(`${API_BASE}/minerals/${id}`);
+       
+       if (!response.ok) {
+           throw new Error(`Mineral nicht gefunden`);
+       }
+       
+       const mineral = await response.json();
+       const modalContent = document.getElementById('modalContent');
+       
+       // Basis-URL für Bilder
+       const imageBase = window.location.protocol + '//' + window.location.hostname + ':8084/images';
+       
+       modalContent.innerHTML = `
+           <h2>${mineral.name}</h2>
+           
+           ${mineral.image_path 
+               ? `<div class="detail-image">
+                    <img src="${imageBase}/${mineral.image_path}" alt="${mineral.name}" onerror="this.style.display='none'">
+                    <button class="zoom-btn detail-zoom-btn" onclick="openImageZoom('${imageBase}/${mineral.image_path}', '${mineral.name}')" title="Bild vergrößern">🔍</button>
+                  </div>`
+               : '<div style="text-align: center; font-size: 80px; margin: 20px 0; color: #ddd;">📸</div>'
+           }
+           
+           <div class="detail-info">
+               <div class="detail-item">
+                   <span class="detail-label">Steinnummer:</span>
+                   <span class="detail-value">${mineral.number}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Farbe:</span>
+                   <span class="detail-value">${mineral.color || 'Nicht angegeben'}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Fundort:</span>
+                   <span class="detail-value">${mineral.location || 'Unbekannt'}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Kaufort:</span>
+                   <span class="detail-value">${mineral.purchase_location || 'Nicht angegeben'}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Gesteinsart:</span>
+                   <span class="detail-value">${mineral.rock_type || 'Nicht angegeben'}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Regal:</span>
+                   <span class="detail-value">${mineral.shelf || 'Nicht angegeben'}</span>
+               </div>
+               <div class="detail-item">
+                   <span class="detail-label">Hinzugefügt:</span>
+                   <span class="detail-value">${new Date(mineral.created_at).toLocaleDateString('de-DE')}</span>
+               </div>
+           </div>
+           
+           <div style="margin-top: 20px;">
+               <h3>Beschreibung</h3>
+               <p style="margin-top: 10px; color: #555; line-height: 1.6;">${mineral.description || 'Keine Beschreibung verfügbar.'}</p>
+           </div>
+           
+           <div style="margin-top: 20px; text-align: center;">
+               <button onclick="openEditModal(${mineral.id})" class="btn-edit">Bearbeiten</button>
+               <button onclick="deleteMineral(${mineral.id})" class="btn-delete">Löschen</button>
+               ${currentShelfId ? `<button onclick="backToShelfMinerals()" class="btn-back">Zurück zum Regal</button>` : ''}
+           </div>
+       `;
 
-        // Mineral-Details-Modal öffnen
-        document.getElementById('mineralModal').style.display = 'flex';
-    } catch (error) {
-        console.error('Fehler beim Laden der Mineral-Details:', error);
-        showError('Details konnten nicht geladen werden.');
-    }
+       // Mineral-Details-Modal öffnen
+       document.getElementById('mineralModal').style.display = 'flex';
+   } catch (error) {
+       console.error('Fehler beim Laden der Mineral-Details:', error);
+       showError('Details konnten nicht geladen werden.');
+   }
 }
 
 // Funktion um zurück zum Regal zu gehen
@@ -688,6 +699,194 @@ document.addEventListener('keydown', function(event) {
         closeEditModal();
     }
 });
+
+// Vordefinierte Gesteinsarten mit Kategorien
+const rockTypeData = {
+    'Hauptkategorien': [
+        'magmatisch',
+        'sedimentär', 
+        'metamorph'
+    ],
+    'Magmatische Gesteine': [
+        'plutonisch',
+        'vulkanisch',
+        'basaltisch',
+        'granitisch',
+        'rhyolithisch',
+        'andesitisch',
+        'pegmatitisch'
+    ],
+    'Sedimentäre Gesteine': [
+        'klastisch',
+        'karbonatisch',
+        'evaporitisch',
+        'organogen',
+        'sandstein',
+        'kalkstein',
+        'tonstein',
+        'konglomerat'
+    ],
+    'Metamorphe Gesteine': [
+        'kontaktmetamorph',
+        'regionalmetamorph',
+        'dynamometamorph',
+        'schieferig',
+        'gneisig',
+        'hornfelsisch'
+    ],
+    'Spezielle Typen': [
+        'hydrothermale bildung',
+        'verwitterungsprodukt',
+        'oxidationszone',
+        'sekundärmineral',
+        'gangmineral'
+    ]
+};
+
+let allRockTypes = new Set();
+
+// Autocomplete für Gesteinsarten einrichten
+function setupRockTypeAutocomplete(inputId, suggestionsId) {
+    const input = document.getElementById(inputId);
+    const suggestionsDiv = document.getElementById(suggestionsId);
+    
+    if (!input || !suggestionsDiv) return;
+    
+    let currentSelection = -1;
+
+    input.addEventListener('input', function() {
+        const value = this.value.toLowerCase();
+        showRockTypeSuggestions(value, suggestionsDiv, inputId);
+        currentSelection = -1;
+    });
+
+    input.addEventListener('keydown', function(e) {
+        const suggestions = suggestionsDiv.querySelectorAll('.rock-type-suggestion');
+        
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            currentSelection = Math.min(currentSelection + 1, suggestions.length - 1);
+            updateRockTypeSelection(suggestions, currentSelection);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            currentSelection = Math.max(currentSelection - 1, -1);
+            updateRockTypeSelection(suggestions, currentSelection);
+        } else if (e.key === 'Enter' && currentSelection >= 0) {
+            e.preventDefault();
+            suggestions[currentSelection].click();
+        } else if (e.key === 'Escape') {
+            hideRockTypeSuggestions(suggestionsDiv);
+        }
+    });
+
+    input.addEventListener('blur', function() {
+        setTimeout(() => hideRockTypeSuggestions(suggestionsDiv), 200);
+    });
+
+    input.addEventListener('focus', function() {
+        if (this.value) {
+            showRockTypeSuggestions(this.value.toLowerCase(), suggestionsDiv, inputId);
+        }
+    });
+}
+
+function showRockTypeSuggestions(value, container, inputId) {
+   container.innerHTML = '';
+   
+   if (value.length === 0) {
+       container.style.display = 'none';
+       return;
+   }
+
+   let hasResults = false;
+
+   // Durchsuche vordefinierte Kategorien
+   Object.keys(rockTypeData).forEach(category => {
+       const matches = rockTypeData[category].filter(type => 
+           type.toLowerCase().includes(value)
+       );
+
+       if (matches.length > 0) {
+           if (!hasResults) {
+               hasResults = true;
+           }
+
+           // Kategorie-Header
+           const categoryDiv = document.createElement('div');
+           categoryDiv.className = 'suggestion-category';
+           categoryDiv.textContent = category;
+           container.appendChild(categoryDiv);
+
+           // Vorschläge für diese Kategorie
+           matches.forEach(match => {
+               const suggestionDiv = document.createElement('div');
+               suggestionDiv.className = 'rock-type-suggestion';
+               
+               // Hervorheben des gefundenen Textes
+               const regex = new RegExp(`(${value})`, 'gi');
+               const highlightedText = match.replace(regex, '<strong>$1</strong>');
+               suggestionDiv.innerHTML = highlightedText;
+               
+               suggestionDiv.addEventListener('click', function() {
+                   document.getElementById(inputId).value = match;
+                   hideRockTypeSuggestions(container);
+               });
+               
+               container.appendChild(suggestionDiv);
+           });
+       }
+   });
+
+   // Benutzerdefinierte Gesteinsarten aus vorhandenen Mineralien
+   const customTypes = Array.from(allRockTypes).filter(type => 
+       type.toLowerCase().includes(value) && 
+       !Object.values(rockTypeData).flat().includes(type.toLowerCase())
+   );
+
+   if (customTypes.length > 0) {
+       if (!hasResults) {
+           hasResults = true;
+       }
+
+       const categoryDiv = document.createElement('div');
+       categoryDiv.className = 'suggestion-category';
+       categoryDiv.textContent = 'Bereits verwendete Typen';
+       container.appendChild(categoryDiv);
+
+       customTypes.forEach(type => {
+           const suggestionDiv = document.createElement('div');
+           suggestionDiv.className = 'rock-type-suggestion';
+           
+           const regex = new RegExp(`(${value})`, 'gi');
+           const highlightedText = type.replace(regex, '<strong>$1</strong>');
+           suggestionDiv.innerHTML = highlightedText;
+           
+           suggestionDiv.addEventListener('click', function() {
+               document.getElementById(inputId).value = type;
+               hideRockTypeSuggestions(container);
+           });
+           
+           container.appendChild(suggestionDiv);
+       });
+   }
+
+   if (hasResults) {
+       container.style.display = 'block';
+   } else {
+       container.style.display = 'none';
+   }
+}
+
+function updateRockTypeSelection(suggestions, index) {
+   suggestions.forEach((s, i) => {
+       s.classList.toggle('highlighted', i === index);
+   });
+}
+
+function hideRockTypeSuggestions(container) {
+   container.style.display = 'none';
+   container.innerHTML = '';
+}
 
 // JavaScript-Erweiterung für das Vitrinensystem - in app.js hinzufügen
 
@@ -1472,6 +1671,11 @@ window.onclick = function(event) {
     const editShelfModal = document.getElementById('editShelfModal');
     const shelfMineralsModal = document.getElementById('shelfMineralsModal');
     const imageZoomModal = document.getElementById('imageZoomModal');
+    
+    // Prüfen ob Klick auf Autocomplete-Vorschlag war
+    if (event.target.closest('.rock-type-suggestions')) {
+        return; // Nicht schließen wenn auf Autocomplete geklickt wird
+    }
     
     if (event.target === mineralModal) closeModal();
     if (event.target === editModal) closeEditModal();

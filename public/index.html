@@ -105,12 +105,17 @@
                 <textarea id="mineralDescription" placeholder="Beschreibung" required></textarea>
                 <input type="text" id="mineralLocation" placeholder="Fundort" required>
                 <input type="text" id="mineralPurchaseLocation" placeholder="Kaufort" required>
-                <select id="mineralRockType" required>
-                    <option value="">Gesteinsart auswählen</option>
-                    <option value="magmatisch">Magmatisch</option>
-                    <option value="sedimentär">Sedimentär</option>
-                    <option value="metamorph">Metamorph</option>
-                </select>
+                <div class="rock-type-container">
+                    <input 
+                        type="text" 
+                        id="mineralRockType" 
+                        class="rock-type-input"
+                        placeholder="Gesteinsart eingeben (z.B. magmatisch, sedimentär, metamorph)" 
+                        autocomplete="off"
+                        required
+                    >
+                    <div id="rockTypeSuggestions" class="rock-type-suggestions"></div>
+                </div>
                 <input type="text" id="mineralShelf" placeholder="Regal-Nummer" required>
                 
                 <div class="file-input-wrapper">
@@ -163,12 +168,17 @@
                 <textarea id="editMineralDescription" placeholder="Beschreibung" required></textarea>
                 <input type="text" id="editMineralLocation" placeholder="Fundort" required>
                 <input type="text" id="editMineralPurchaseLocation" placeholder="Kaufort" required>
-                <select id="editMineralRockType" required>
-                    <option value="">Gesteinsart auswählen</option>
-                    <option value="magmatisch">Magmatisch</option>
-                    <option value="sedimentär">Sedimentär</option>
-                    <option value="metamorph">Metamorph</option>
-                </select>
+                <div class="rock-type-container">
+                    <input 
+                        type="text" 
+                        id="mineralRockType" 
+                        class="rock-type-input"
+                        placeholder="Gesteinsart eingeben (z.B. magmatisch, sedimentär, metamorph)" 
+                        autocomplete="off"
+                        required
+                    >
+                    <div id="rockTypeSuggestions" class="rock-type-suggestions"></div>
+                </div>
                 <input type="text" id="editMineralShelf" placeholder="Regal-Nummer" required>
                 
                 <div class="file-input-wrapper">
