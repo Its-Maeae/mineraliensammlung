@@ -543,18 +543,18 @@ function closeModal() {
     document.getElementById('mineralModal').style.display = 'none';
 }
 
-// Alle Modals schließen (Hilfsfunktion)
-function closeAllModals() {
-    closeModal();
-    closeEditModal();
-    closeVitrineDetailModal();
-    closeShelfMineralsModal();
-    closeAddVitrineModal();
-    closeEditVitrineModal();
-    closeAddShelfModal();
-    closeEditShelfModal();
-    closeImageZoom();
-}
+// // Alle Modals schließen (Hilfsfunktion)
+// function closeAllModals() {
+//     closeModal();
+//     closeEditModal();
+//     closeVitrineDetailModal();
+//     closeShelfMineralsModal();
+//     closeAddVitrineModal();
+//     closeEditVitrineModal();
+//     closeAddShelfModal();
+//     closeEditShelfModal();
+//     closeImageZoom();
+// }
 
 // Bild-Vorschau (für neues Mineral)
 function previewImage(event) {
