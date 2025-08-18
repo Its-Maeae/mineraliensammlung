@@ -322,9 +322,9 @@ function displayMinerals() {
 // Mineral-Details anzeigen - VERBESSERTE VERSION
 async function showMineralDetails(id) {
     try {
-        // Erst alle anderen Modals schließen
-        closeShelfMineralsModal();
-        closeVitrineDetailModal();
+        // // Erst alle anderen Modals schließen
+        // closeShelfMineralsModal();
+        // closeVitrineDetailModal();
         
         const response = await fetch(`${API_BASE}/minerals/${id}`);
         
@@ -400,13 +400,13 @@ async function showMineralDetails(id) {
     }
 }
 
-// // Funktion um zurück zum Regal zu gehen
-// function backToShelfMinerals() {
-//     if (currentShelfId) {
-//         closeModal(); // Mineral-Details schließen
-//         showShelfMinerals(currentShelfId); // Regal wieder öffnen
-//     }
-// }
+// Funktion um zurück zum Regal zu gehen
+function backToShelfMinerals() {
+    if (currentShelfId) {
+        closeModal(); // Mineral-Details schließen
+        showShelfMinerals(currentShelfId); // Regal wieder öffnen
+    }
+}
 
 // Bearbeitungsmodal öffnen
 async function openEditModal(id) {
